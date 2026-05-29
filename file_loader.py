@@ -21,14 +21,15 @@ class FileLoader:
             "start_hub",
             "end_hub"
         }
+        self.first_key = "nb_drones"
 
     def has_all_keys(self) -> bool:
         """
         """
 
         config_keys = {
-            t[0]
-            for t in self.config
+            key
+            for key, _ in self.config
         }
 
         number_of_keys = len(config_keys)
@@ -46,6 +47,11 @@ class FileLoader:
 
                     if not line or line.startswith("#"):
                         continue
+
+                    if not self.config and not line.startswith(self.first_key):
+                        raise ParseError(
+                            f"First key should be '{self.first_key}'"
+                        )
 
                     if ":" not in line:
                         raise ParseError(f"Invalid line: '{line}'")
