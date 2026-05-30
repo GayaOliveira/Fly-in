@@ -56,7 +56,12 @@ class FileLoader:
                     if ":" not in line:
                         raise ParseError(f"Invalid line: '{line}'")
 
-                    key, value = line.split(": ", 1)
+                    line = line.split(": ", 1)
+
+                    if len(line) <= 1:
+                        raise ParseError(f"Invalid line: '{line}'")
+
+                    key, value = line
 
                     if key.lower() not in self.valid_keys:
                         raise ParseError(
