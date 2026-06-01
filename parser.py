@@ -34,9 +34,9 @@ class Parser:
                 # )
                 # data["graph_elements"].append(hub)
 
-            # if key == "connection":
-                # connection = ConnectionSchema(key, value)
-                # data["graph_elements"].append(connection)
+            if key == "connection":
+                connection_data = self._parse_connection(key, value)
+                data["graph_elements"].append(connection_data)
 
         return data
 
@@ -75,6 +75,39 @@ class Parser:
 
         parsed["name"] = name
         parsed["coordinates"] = f"{x},{y}"
+
+        return parsed
+
+    def _parse_connection(self, key: str, value: str) -> dict[str, str]:
+        line = f"{key}: {value}"
+        parsed: dict[str, str] = {}
+
+        mandatory_data = value
+
+        metadata, open_bracket = self._get_metadata(value, line)
+
+        if len(metadata.split(",")) > 1:
+            raise ParseError(f"Too many metadata parameters in: '{line}'")
+
+        if metadata:
+            mandatory_data = value[:open_bracket - 1]
+            parsed["metadata"] = metadata
+
+        if " " in mandatory_data:
+            raise ParseError(f"Invalid connection in: '{line}'")
+
+        tokens = mandatory_data.split("-")
+
+        if len(tokens) < 2:
+            raise ParseError(f"Invalid connection in: '{line}'")
+
+        if len(tokens) > 2:
+            raise ParseError(f"Too many parameters in: '{line}'")
+
+        first_hub, second_hub = tokens
+
+        parsed["first_hub"] = first_hub
+        parsed["second_hub"] = second_hub
 
         return parsed
 
