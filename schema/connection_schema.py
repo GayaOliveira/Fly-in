@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class ConnectionSchema(BaseModel):
-    conection: tuple[str, str]
+    first_hub: str
+    second_hub: str
     max_link_capacity: int = Field(ge=1)
 
     # @field_validator("coordinates")
