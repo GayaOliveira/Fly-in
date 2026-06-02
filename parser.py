@@ -1,6 +1,7 @@
 from errors import ParseError
 from typing import TypedDict
 from schema import HubSchema, ConnectionSchema
+from pydantic import ValidationError
 
 
 class Parsed(TypedDict):
@@ -13,26 +14,36 @@ class Parser:
         self.raw = raw
 
     def parse(self) -> Parsed:
-        data: Parsed = {
+        data: dict[str, int | list[HubSchema | ConnectionSchema]] = {
             "nb_drones": 0,
             "graph_elements": []
         }
 
         for key, value in self.raw:
-
             if key == "nb_drones":
                 nb_drones = self._parse_nb_drones(key, value)
                 data.update({"nb_drones": nb_drones})
 
             if key == "start_hub" or key == "hub" or key == "end_hub":
                 hub_data = self._parse_hub(key, value)
-                data["graph_elements"].append(hub_data)
-                # hub = HubSchema(
-                #     name=hub_data["name"],
-                #     coordinates=hub_data["coordinates"],
-                #     metadata=hub_data["metadata"]
-                # )
-                # data["graph_elements"].append(hub)
+
+                try:
+                    hub = HubSchema(
+                        start=True if key == "start_hub" else False,
+                        end=True if key == "end_hub" else False,
+                        name=hub_data["name"],
+                        coordinates=hub_data["coordinates"],
+                        metadata=hub_data["metadata"]
+                    )
+
+                    data["graph_elements"].append(hub)
+
+                except ValidationError as error:
+                    error_msg = error.errors()[0]["msg"]
+                    _, msg = error_msg.split(", ")
+                    raise ParseError(
+                        f"{msg.capitalize()} in line: '{key}: {value}'"
+                    )
 
             if key == "connection":
                 connection_data = self._parse_connection(key, value)
