@@ -1,21 +1,28 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from .hub_schema import HubSchema
 
 
 class ConnectionSchema(BaseModel):
-    first_hub: HubSchema
-    second_hub: HubSchema
+    hub_pair: list[HubSchema]
     max_link_capacity: int = Field(ge=1)
 
-    # @field_validator("coordinates")
-    # @classmethod
-    # def validate_coordinates(cls, value):
+    @field_validator("max_link_capacity", mode="before")
+    @classmethod
+    def validate_metadata(cls, metadata: str) -> int:
 
-    #     # questão dos espaços
+        if metadata.isnumeric():
+            return metadata
 
-    #     has_space = any(char.isspace() for char in value)
+        tokens = metadata.split("=")
 
-    #     if has_space:
-    #         raise ParseError(f"Invalid value in '{key}: {value}'")
+        if len(tokens) != 2:
+            raise ValueError("Invalid metadata")
 
-    #     return int(value)
+        if not tokens[0] or tokens[0] != "max_link_capacity":
+            print(tokens[0])
+            raise ValueError("Invalid metadata key")
+
+        if not tokens[1].isnumeric():
+            raise ValueError("Invalid metadata value")
+
+        return tokens[1]

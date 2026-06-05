@@ -51,23 +51,36 @@ class Parser:
                 connection_data = self._parse_connection(key, value)
                 hub1_name = connection_data["first_hub"]
                 hub2_name = connection_data["second_hub"]
+                hub_name_pair = {hub1_name, hub2_name}
+
+                if self.is_duplicated_connection(
+                        hub_name_pair, data["connections"]
+                ):
+                    raise ParseError(
+                        "The same connection must not appear more than "
+                        f"once. Line: '{key}: {value}'"
+                    )
+
                 hub1 = self._get_hub(hub1_name, data["hubs"])
                 hub2 = self._get_hub(hub2_name, data["hubs"])
+                hub_pair = [hub1, hub2]
+                if connection_data.get("metadata") is None:
+                    connection_data.update({"metadata": "1"})
 
                 try:
                     connection = ConnectionSchema(
-                        first_hub=hub1,
-                        second_hub=hub2,
+                        hub_pair=hub_pair,
                         max_link_capacity=connection_data["metadata"]
                     )
 
                     data["connections"].append(connection)
 
                 except ValidationError as error:
-                    error_msg = error.errors()[0]["msg"]
-                    _, msg = error_msg.split(", ")
+                    # error_msg = error.errors()[0]["msg"]
+                    # _, msg = error_msg.split(", ")
                     raise ParseError(
-                        f"{msg.capitalize()} in line: '{key}: {value}'"
+                        # f"{msg.capitalize()} in line: '{key}: {value}'"
+                        f"{error} in line: '{key}: {value}'"
                     )
 
         return data
@@ -117,20 +130,13 @@ class Parser:
         mandatory_data = value
 
         metadata, open_bracket = self._get_metadata(value, line)
-        parsed["metadata"] = "1"
 
         if len(metadata.split(",")) > 1:
             raise ParseError(f"Too many metadata parameters in: '{line}'")
 
         if metadata:
             mandatory_data = value[:open_bracket - 1]
-            token = value[open_bracket:]
-            metadata_key = token.split("=", 1)[0]
-            max_link_capacity = token.split("=", 1)[1]
-            print(token.split("=", 1)[0])
-            if metadata_key[1:] != "max_link_capacity":
-                raise ParseError(f"Invalid metadata key in: '{line}'")
-            parsed["metadata"] = max_link_capacity[:-1]
+            parsed["metadata"] = metadata
 
         if " " in mandatory_data:
             raise ParseError(f"Invalid connection in: '{line}'")
@@ -217,3 +223,13 @@ class Parser:
                 return hub
 
         raise ParseError("Inexistent hub")
+
+    def is_duplicated_connection(
+        self,
+        hub_pair: set[str],
+        connections: list[ConnectionSchema]
+    ) -> bool:
+        return any(
+            hub_pair == {hub.name for hub in conn.hub_pair}
+            for conn in connections
+        )
