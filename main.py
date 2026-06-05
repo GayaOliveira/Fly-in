@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
         for element in data["connections"]:
             print(
-                f"{element.first_hub.name}-{element.second_hub.name} "
+                f"{element.hub_pair[0].name}-{element.hub_pair[1].name} "
                 f"max_link_capacity = {element.max_link_capacity}"
                 )
 
