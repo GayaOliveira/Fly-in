@@ -19,7 +19,6 @@ class ConnectionSchema(BaseModel):
             raise ValueError("Invalid metadata")
 
         if not tokens[0] or tokens[0] != "max_link_capacity":
-            print(tokens[0])
             raise ValueError("Invalid metadata key")
 
         if not tokens[1].isnumeric():

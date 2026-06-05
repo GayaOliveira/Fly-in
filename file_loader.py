@@ -69,7 +69,7 @@ class FileLoader:
                         )
 
                     if (
-                        key.lower() in [elem[0] for elem in self.config]
+                        key.lower() in [key for key, _ in self.config]
                         and key.lower() in self.unique_keys
                     ):
                         raise ParseError(

@@ -29,6 +29,11 @@ class Parser:
             if key == "start_hub" or key == "hub" or key == "end_hub":
                 hub_data = self._parse_hub(key, value)
 
+                if hub_data["name"] in [hub.name for hub in data["hubs"]]:
+                    raise ParseError(
+                        f"Duplicated hub in line: '{key}: {value}'"
+                    )
+
                 try:
                     hub = HubSchema(
                         start=True if key == "start_hub" else False,
@@ -76,11 +81,13 @@ class Parser:
                     data["connections"].append(connection)
 
                 except ValidationError as error:
-                    # error_msg = error.errors()[0]["msg"]
-                    # _, msg = error_msg.split(", ")
+                    msg = error.errors()[0]["msg"]
+
+                    if msg.find(", ") != -1:
+                        _, msg = msg.split(", ")
+
                     raise ParseError(
-                        # f"{msg.capitalize()} in line: '{key}: {value}'"
-                        f"{error} in line: '{key}: {value}'"
+                        f"{msg.capitalize()} in line: '{key}: {value}'"
                     )
 
         return data
