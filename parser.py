@@ -205,7 +205,7 @@ class Parser:
             metadata_parts.append(token)
 
         return ",".join(metadata_parts)
-    
+
     def _get_hub(
             self,
             name: str,
@@ -215,5 +215,5 @@ class Parser:
         for hub in hubs:
             if hub.name == name:
                 return hub
-            
+
         raise ParseError("Inexistent hub")
