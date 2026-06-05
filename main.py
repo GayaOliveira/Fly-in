@@ -12,8 +12,18 @@ if __name__ == "__main__":
 
         print("nb_drones =>", data["nb_drones"])
 
-        for element in data["graph_elements"]:
+        print()
+
+        for element in data["hubs"]:
             print(element)
+
+        print()
+
+        for element in data["connections"]:
+            print(
+                f"{element.first_hub.name}-{element.second_hub.name} "
+                f"max_link_capacity = {element.max_link_capacity}"
+                )
 
     except ParseError as error:
         print(f"\033[31mError: {error}\033[m")
