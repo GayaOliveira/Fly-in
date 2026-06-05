@@ -1,9 +1,10 @@
 from pydantic import BaseModel, Field
+from .hub_schema import HubSchema
 
 
 class ConnectionSchema(BaseModel):
-    first_hub: str
-    second_hub: str
+    first_hub: HubSchema
+    second_hub: HubSchema
     max_link_capacity: int = Field(ge=1)
 
     # @field_validator("coordinates")

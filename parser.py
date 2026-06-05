@@ -6,7 +6,8 @@ from pydantic import ValidationError
 
 class Parsed(TypedDict):
     nb_drones: int
-    graph_elements = list[HubSchema | ConnectionSchema]
+    hubs = list[HubSchema]
+    connections = list[ConnectionSchema]
 
 
 class Parser:
@@ -14,9 +15,10 @@ class Parser:
         self.raw = raw
 
     def parse(self) -> Parsed:
-        data: dict[str, int | list[HubSchema | ConnectionSchema]] = {
+        data: dict[str, int | list[HubSchema] | list[ConnectionSchema]] = {
             "nb_drones": 0,
-            "graph_elements": []
+            "hubs": [],
+            "connections": []
         }
 
         for key, value in self.raw:
@@ -36,7 +38,7 @@ class Parser:
                         metadata=hub_data["metadata"]
                     )
 
-                    data["graph_elements"].append(hub)
+                    data["hubs"].append(hub)
 
                 except ValidationError as error:
                     error_msg = error.errors()[0]["msg"]
@@ -47,7 +49,26 @@ class Parser:
 
             if key == "connection":
                 connection_data = self._parse_connection(key, value)
-                data["graph_elements"].append(connection_data)
+                hub1_name = connection_data["first_hub"]
+                hub2_name = connection_data["second_hub"]
+                hub1 = self._get_hub(hub1_name, data["hubs"])
+                hub2 = self._get_hub(hub2_name, data["hubs"])
+
+                try:
+                    connection = ConnectionSchema(
+                        first_hub=hub1,
+                        second_hub=hub2,
+                        max_link_capacity=connection_data["metadata"]
+                    )
+
+                    data["connections"].append(connection)
+
+                except ValidationError as error:
+                    error_msg = error.errors()[0]["msg"]
+                    _, msg = error_msg.split(", ")
+                    raise ParseError(
+                        f"{msg.capitalize()} in line: '{key}: {value}'"
+                    )
 
         return data
 
@@ -96,13 +117,20 @@ class Parser:
         mandatory_data = value
 
         metadata, open_bracket = self._get_metadata(value, line)
+        parsed["metadata"] = "1"
 
         if len(metadata.split(",")) > 1:
             raise ParseError(f"Too many metadata parameters in: '{line}'")
 
         if metadata:
             mandatory_data = value[:open_bracket - 1]
-            parsed["metadata"] = metadata
+            token = value[open_bracket:]
+            metadata_key = token.split("=", 1)[0]
+            max_link_capacity = token.split("=", 1)[1]
+            print(token.split("=", 1)[0])
+            if metadata_key[1:] != "max_link_capacity":
+                raise ParseError(f"Invalid metadata key in: '{line}'")
+            parsed["metadata"] = max_link_capacity[:-1]
 
         if " " in mandatory_data:
             raise ParseError(f"Invalid connection in: '{line}'")
@@ -177,3 +205,15 @@ class Parser:
             metadata_parts.append(token)
 
         return ",".join(metadata_parts)
+    
+    def _get_hub(
+            self,
+            name: str,
+            hubs: list[HubSchema]
+            ) -> HubSchema:
+
+        for hub in hubs:
+            if hub.name == name:
+                return hub
+            
+        raise ParseError("Inexistent hub")
