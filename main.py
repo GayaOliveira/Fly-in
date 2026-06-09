@@ -1,6 +1,7 @@
 from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
+from gui import GrafoApp
 
 if __name__ == "__main__":
     try:
@@ -10,20 +11,23 @@ if __name__ == "__main__":
         parser = Parser(raw)
         data = parser.parse()
 
-        print("nb_drones =>", data["nb_drones"])
+        app = GrafoApp(data)
+        app.mainloop()
 
-        print()
+        # print("nb_drones =>", data["nb_drones"])
 
-        for element in data["hubs"]:
-            print(element)
+        # print()
 
-        print()
+        # for element in data["hubs"]:
+        #     print(element)
 
-        for element in data["connections"]:
-            print(
-                f"{element.hub_pair[0].name}-{element.hub_pair[1].name} "
-                f"max_link_capacity = {element.max_link_capacity}"
-                )
+        # print()
+
+        # for element in data["connections"]:
+        #     print(
+        #         f"{element.hub_pair[0].name}-{element.hub_pair[1].name} "
+        #         f"max_link_capacity = {element.max_link_capacity}"
+        #         )
 
     except ParseError as error:
         print(f"\033[31mError: {error}\033[m")
