@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import TypedDict, Optional
+from typing import Optional
+from typing_extensions import TypedDict
 from enum import Enum
 from matplotlib.colors import is_color_like
 
@@ -42,7 +43,6 @@ class HubSchema(BaseModel):
     @field_validator("coordinates", mode="before")
     @classmethod
     def validate_coordinates(cls, coordinates: str) -> tuple[int, int]:
-
         x, y = coordinates.split(",")
 
         try:
