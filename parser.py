@@ -43,6 +43,13 @@ class Parser:
                         metadata=hub_data["metadata"]
                     )
 
+                    if self.is_overlapping_hub(
+                        hub, data["hubs"]
+                    ):
+                        raise ParseError(
+                            f"Overlapping hub in line: '{key}: {value}'"
+                        )
+
                     data["hubs"].append(hub)
 
                 except ValidationError as error:
@@ -230,6 +237,16 @@ class Parser:
                 return hub
 
         raise ParseError("Inexistent hub")
+
+    def is_overlapping_hub(
+        self,
+        new_hub: HubSchema,
+        hubs: list[HubSchema]
+    ) -> bool:
+        return any(
+            new_hub.coordinates == hub.coordinates
+            for hub in hubs
+        )
 
     def is_duplicated_connection(
         self,
