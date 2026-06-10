@@ -11,9 +11,6 @@ if __name__ == "__main__":
         parser = Parser(raw)
         data = parser.parse()
 
-        app = GrafoApp(data)
-        app.mainloop()
-
         # print("nb_drones =>", data["nb_drones"])
 
         # print()
@@ -28,6 +25,9 @@ if __name__ == "__main__":
         #         f"{element.hub_pair[0].name}-{element.hub_pair[1].name} "
         #         f"max_link_capacity = {element.max_link_capacity}"
         #         )
+
+        app = GrafoApp(data)
+        app.mainloop()
 
     except ParseError as error:
         print(f"\033[31mError: {error}\033[m")
