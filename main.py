@@ -5,7 +5,7 @@ from gui import GrafoApp
 
 if __name__ == "__main__":
     try:
-        loader = FileLoader("03_priority_puzzle.txt")
+        loader = FileLoader("03_ultimate_challenge.txt")
         raw = loader.get_config()
 
         parser = Parser(raw)
