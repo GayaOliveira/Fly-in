@@ -1,4 +1,4 @@
-from .hub_schema import HubSchema
+from .hub_schema import HubSchema, HubMetadata
 from .connection_schema import ConnectionSchema
 
-__all__ = ["HubSchema", "ConnectionSchema"]
+__all__ = ["HubSchema", "ConnectionSchema", "HubMetadata"]
