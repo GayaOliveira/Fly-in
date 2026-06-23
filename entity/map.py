@@ -1,7 +1,7 @@
+from parser import Parsed
 from .hub import Hub
 from .connection import Connection
 from .drone import Drone
-from ..parser import Parsed
 
 
 class Map:
@@ -23,12 +23,12 @@ class Map:
     def from_parsed(cls, parsed: Parsed):
         hubs = [
             Hub.from_schema(hub)
-            for hub in parsed.hubs
+            for hub in parsed["hubs"]
         ]
 
         connections = [
-            Connection.from_schema(connection)
-            for connection in parsed.connections
+            Connection.from_schema(connection, hubs)
+            for connection in parsed["connections"]
         ]
 
         start_hub = next(hub for hub in hubs if hub.start)
@@ -36,7 +36,7 @@ class Map:
 
         drones = [
                 Drone(start_hub)
-                for _ in range(parsed.nb_drones)
+                for _ in range(parsed["nb_drones"])
             ]
 
         return cls(

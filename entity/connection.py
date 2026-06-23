@@ -1,5 +1,5 @@
 from schema import ConnectionSchema
-from hub import Hub
+from .hub import Hub
 
 
 class Connection:
