@@ -1,8 +1,7 @@
 import math
 from typing import Optional
 import customtkinter as ctk
-from schema import HubSchema, ConnectionSchema
-from parser import Parsed
+from entity import Map, Hub, Connection
 
 
 # ── Configuração do tema ─────────────────────────────────────────────────────
@@ -32,14 +31,14 @@ CANVAS_H = 560
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 def map_coords(
-    hubs: list[HubSchema],
+    hubs: list[Hub],
     canvas_w: int,
     canvas_h: int,
     margin: int,
 ) -> dict[str, tuple[float, float]]:
     """Normaliza as coordenadas lógicas dos hubs para o espaço do canvas."""
-    xs = [h.coordinates[0] for h in hubs]
-    ys = [h.coordinates[1] for h in hubs]
+    xs = [hub.coordinates[0] for hub in hubs]
+    ys = [hub.coordinates[1] for hub in hubs]
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
     span_x = max_x - min_x or 1
@@ -48,21 +47,21 @@ def map_coords(
     area_h = canvas_h - 2 * margin
 
     return {
-        h.name: (
-            margin + (h.coordinates[0] - min_x) / span_x * area_w,
-            margin + (h.coordinates[1] - min_y) / span_y * area_h,
+        hub.name: (
+            margin + (hub.coordinates[0] - min_x) / span_x * area_w,
+            margin + (hub.coordinates[1] - min_y) / span_y * area_h,
         )
-        for h in hubs
+        for hub in hubs
     }
 
 
-def color_vertex(hub: HubSchema) -> str:
+def color_vertex(hub: Hub) -> str:
     """Retorna a cor de preenchimento do hub, priorizando metadata.color."""
     color = (hub.metadata or {}).get("color")
     return color if color else COLOR_VERTEX
 
 
-def color_border(hub: HubSchema) -> str:
+def color_border(hub: Hub) -> str:
     """Borda dourada para start, ciano para end, branca para o resto."""
     if hub.start:
         return COLOR_BORDER_START
@@ -74,9 +73,9 @@ def color_border(hub: HubSchema) -> str:
 # ── Aplicação ───────────────────────────────────────────────────────────────
 
 class GrafoApp(ctk.CTk):
-    def __init__(self, data: Parsed) -> None:
+    def __init__(self, map_obj: Map) -> None:
         """
-        data       : dados do grafo (hubs, conexões, drones)
+        map_obj    : dados do grafo (hubs, conexões, drones)
         drone_path : lista ordenada de nomes de hubs que o drone percorre;
                      se None, nenhuma animação é iniciada
         """
@@ -85,16 +84,19 @@ class GrafoApp(ctk.CTk):
         self.resizable(False, False)
 
         # Índices de acesso rápido
-        self.hubs: dict[str, HubSchema] = {h.name: h for h in data["hubs"]}
-        self.connections: list[ConnectionSchema] = data["connections"]
+        self.hubs: dict[str, Hub] = {
+            hub.name: hub
+            for hub in map_obj.hubs
+        }
+        self.connections: list[Connection] = map_obj.connections
         # Arestas como pares de nomes para facilitar buscas
         self.edges: list[tuple[str, str]] = [
-            (c.hub_pair[0].name, c.hub_pair[1].name)
-            for c in self.connections
+            (conn.hub_pair[0].name, conn.hub_pair[1].name)
+            for conn in self.connections
         ]
-        self.nb_drones: int = data["nb_drones"]
+        self.nb_drones: int = len(map_obj.drones)
 
-        self.coords = map_coords(data["hubs"], CANVAS_W, CANVAS_H, MARGIN)
+        self.coords = map_coords(map_obj.hubs, CANVAS_W, CANVAS_H, MARGIN)
         self.selected: Optional[str] = None
         self.hover_vertex: Optional[str] = None
 
@@ -119,7 +121,7 @@ class GrafoApp(ctk.CTk):
             frame,
             text=(
                 f"{len(self.hubs)} vértices · {len(self.edges)} arestas · "
-                f"{self.nb_drones} drones  —  clique num vértice para destacá-lo"
+                f"{self.nb_drones} drones — clique num vértice para destacá-lo"
             ),
             font=ctk.CTkFont(size=12),
             text_color="#888888",
@@ -128,14 +130,14 @@ class GrafoApp(ctk.CTk):
         # Legenda start / end
         subtitle = ctk.CTkFrame(frame, fg_color="transparent")
         subtitle.pack(pady=(0, 8))
-        for cor, label in (
+        for color, label in (
             (COLOR_BORDER_START, "início"), (COLOR_BORDER_END, "fim")
         ):
             ctk.CTkLabel(
                 subtitle,
                 text="■",
                 font=ctk.CTkFont(size=14),
-                text_color=cor,
+                text_color=color,
             ).pack(side="left", padx=(8, 2))
             ctk.CTkLabel(
                 subtitle,
@@ -192,7 +194,7 @@ class GrafoApp(ctk.CTk):
             x2, y2 = self.coords[v]
 
             connected_selected = self.selected in (u, v)
-            cor = COLOR_SELECTED if connected_selected else COLOR_EDGE
+            color = COLOR_SELECTED if connected_selected else COLOR_EDGE
             width = BORDER_WIDTH + 2 if connected_selected else BORDER_WIDTH
 
             # Encurta a linha para não cobrir os círculos dos vértices
@@ -203,7 +205,7 @@ class GrafoApp(ctk.CTk):
             self.canvas.create_line(
                 x1 + ox, y1 + oy,
                 x2 - ox, y2 - oy,
-                fill=cor, width=width, smooth=True,
+                fill=color, width=width, smooth=True,
             )
 
             # Exibe a capacidade máxima da conexão no meio da aresta
@@ -284,9 +286,9 @@ class GrafoApp(ctk.CTk):
 
         hub = self.hubs[self.selected]
         neighbors = [
-            v for u, v in self.arestas if u == self.selected
+            v for u, v in self.edges if u == self.selected
         ] + [
-            u for u, v in self.arestas if v == self.selected
+            u for u, v in self.edges if v == self.selected
         ]
 
         meta = hub.metadata or {}
