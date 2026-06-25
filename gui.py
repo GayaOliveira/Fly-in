@@ -11,31 +11,31 @@ ctk.set_default_color_theme("blue")
 
 
 # ── Constantes visuais ───────────────────────────────────────────────────────
-COR_FUNDO = "#1a1a2e"
-COR_ARESTA       = "#4a90d9"
-COR_VERTICE      = "#e94560"   # fallback quando hub não tem cor nos metadados
-COR_BORDA        = "#ffffff"
-COR_BORDA_START  = "#ffd700"   # borda dourada para hubs de início
-COR_BORDA_END    = "#00e5ff"   # borda ciano para hubs de fim
-COR_TEXTO        = "#ffffff"
-COR_HOVER        = "#f5a623"
-COR_SELECIONADO  = "#7ed321"
+COLOR_BG = "#1a1a2e"
+COLOR_EDGE = "#4a90d9"
+COLOR_VERTEX = "#e94560"   # fallback quando hub não tem cor nos metadados
+COLOR_BORDER = "#ffffff"
+COLOR_BORDER_START = "#ffd700"   # borda dourada para hubs de início
+COLOR_BORDER_END = "#00e5ff"   # borda ciano para hubs de fim
+COLOR_TEXT = "#ffffff"
+COLOR_HOVER = "#f5a623"
+COLOR_SELECTED = "#7ed321"
 
-RAIO             = 22
-ESPESSURA_ARESTA = 2
-ESPESSURA_BORDA  = 2
-MARGEM           = 60
-CANVAS_W         = 680
-CANVAS_H         = 560
+RADIUS = 22
+EDGE_WIDTH = 2
+BORDER_WIDTH = 2
+MARGIN = 60
+CANVAS_W = 680
+CANVAS_H = 560
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
-def mapear_coords(
+def map_coords(
     hubs: list[HubSchema],
     canvas_w: int,
     canvas_h: int,
-    margem: int,
+    margin: int,
 ) -> dict[str, tuple[float, float]]:
     """Normaliza as coordenadas lógicas dos hubs para o espaço do canvas."""
     xs = [h.coordinates[0] for h in hubs]
@@ -44,61 +44,66 @@ def mapear_coords(
     min_y, max_y = min(ys), max(ys)
     span_x = max_x - min_x or 1
     span_y = max_y - min_y or 1
-    area_w = canvas_w - 2 * margem
-    area_h = canvas_h - 2 * margem
+    area_w = canvas_w - 2 * margin
+    area_h = canvas_h - 2 * margin
 
     return {
         h.name: (
-            margem + (h.coordinates[0] - min_x) / span_x * area_w,
-            margem + (h.coordinates[1] - min_y) / span_y * area_h,
+            margin + (h.coordinates[0] - min_x) / span_x * area_w,
+            margin + (h.coordinates[1] - min_y) / span_y * area_h,
         )
         for h in hubs
     }
 
 
-def cor_vertice(hub: HubSchema) -> str:
+def color_vertex(hub: HubSchema) -> str:
     """Retorna a cor de preenchimento do hub, priorizando metadata.color."""
-    cor = (hub.metadata or {}).get("color")
-    return cor if cor else COR_VERTICE
+    color = (hub.metadata or {}).get("color")
+    return color if color else COLOR_VERTEX
 
 
-def cor_borda(hub: HubSchema) -> str:
+def color_border(hub: HubSchema) -> str:
     """Borda dourada para start, ciano para end, branca para o resto."""
     if hub.start:
-        return COR_BORDA_START
+        return COLOR_BORDER_START
     if hub.end:
-        return COR_BORDA_END
-    return COR_BORDA
+        return COLOR_BORDER_END
+    return COLOR_BORDER
 
 
 # ── Aplicação ───────────────────────────────────────────────────────────────
 
 class GrafoApp(ctk.CTk):
-    def __init__(self, data: Parsed):
+    def __init__(self, data: Parsed) -> None:
+        """
+        data       : dados do grafo (hubs, conexões, drones)
+        drone_path : lista ordenada de nomes de hubs que o drone percorre;
+                     se None, nenhuma animação é iniciada
+        """
         super().__init__()
         self.title("Visualizador de Grafo")
         self.resizable(False, False)
 
         # Índices de acesso rápido
         self.hubs: dict[str, HubSchema] = {h.name: h for h in data["hubs"]}
-        self.conexoes: list[ConnectionSchema] = data["connections"]
+        self.connections: list[ConnectionSchema] = data["connections"]
         # Arestas como pares de nomes para facilitar buscas
-        self.arestas: list[tuple[str, str]] = [
+        self.edges: list[tuple[str, str]] = [
             (c.hub_pair[0].name, c.hub_pair[1].name)
-            for c in self.conexoes
+            for c in self.connections
         ]
         self.nb_drones: int = data["nb_drones"]
 
-        self.coords = mapear_coords(data["hubs"], CANVAS_W, CANVAS_H, MARGEM)
-        self.selecionado: Optional[str] = None
-        self.hover_vertice: Optional[str] = None
+        self.coords = map_coords(data["hubs"], CANVAS_W, CANVAS_H, MARGIN)
+        self.selected: Optional[str] = None
+        self.hover_vertex: Optional[str] = None
 
-        self._construir_ui()
-        self._desenhar_grafo()
+        self._build_ui()
+        self._draw_graph()
 
     # ── Interface ───────────────────────────────────────────────────────────
 
-    def _construir_ui(self):
+    def _build_ui(self):
         frame = ctk.CTkFrame(self, fg_color="#16213e", corner_radius=0)
         frame.pack(fill="both", expand=True)
 
@@ -113,7 +118,7 @@ class GrafoApp(ctk.CTk):
         ctk.CTkLabel(
             frame,
             text=(
-                f"{len(self.hubs)} vértices · {len(self.arestas)} arestas · "
+                f"{len(self.hubs)} vértices · {len(self.edges)} arestas · "
                 f"{self.nb_drones} drones  —  clique num vértice para destacá-lo"
             ),
             font=ctk.CTkFont(size=12),
@@ -121,17 +126,19 @@ class GrafoApp(ctk.CTk):
         ).pack(pady=(0, 4))
 
         # Legenda start / end
-        legenda = ctk.CTkFrame(frame, fg_color="transparent")
-        legenda.pack(pady=(0, 8))
-        for cor, label in ((COR_BORDA_START, "início"), (COR_BORDA_END, "fim")):
+        subtitle = ctk.CTkFrame(frame, fg_color="transparent")
+        subtitle.pack(pady=(0, 8))
+        for cor, label in (
+            (COLOR_BORDER_START, "início"), (COLOR_BORDER_END, "fim")
+        ):
             ctk.CTkLabel(
-                legenda,
+                subtitle,
                 text="■",
                 font=ctk.CTkFont(size=14),
                 text_color=cor,
             ).pack(side="left", padx=(8, 2))
             ctk.CTkLabel(
-                legenda,
+                subtitle,
                 text=label,
                 font=ctk.CTkFont(size=11),
                 text_color="#aaaaaa",
@@ -142,7 +149,7 @@ class GrafoApp(ctk.CTk):
             frame,
             width=CANVAS_W,
             height=CANVAS_H,
-            bg=COR_FUNDO,
+            bg=COLOR_BG,
             highlightthickness=0,
         )
         self.canvas.pack(padx=20, pady=(0, 10))
@@ -167,31 +174,31 @@ class GrafoApp(ctk.CTk):
         ).pack(pady=(0, 16))
 
         # Eventos do mouse
-        self.canvas.bind("<Motion>",   self._on_hover)
+        self.canvas.bind("<Motion>", self._on_hover)
         self.canvas.bind("<Button-1>", self._on_click)
-        self.canvas.bind("<Leave>",    self._on_leave)
+        self.canvas.bind("<Leave>", self._on_leave)
 
     # ── Desenho ─────────────────────────────────────────────────────────────
 
-    def _desenhar_grafo(self):
+    def _draw_graph(self):
         self.canvas.delete("all")
-        self._desenhar_arestas()
-        self._desenhar_vertices()
+        self._draw_edges()
+        self._draw_vertices()
 
-    def _desenhar_arestas(self):
-        for conn in self.conexoes:
+    def _draw_edges(self):
+        for conn in self.connections:
             u, v = conn.hub_pair[0].name, conn.hub_pair[1].name
             x1, y1 = self.coords[u]
             x2, y2 = self.coords[v]
 
-            selecionado_conectado = self.selecionado in (u, v)
-            cor   = COR_SELECIONADO if selecionado_conectado else COR_ARESTA
-            width = ESPESSURA_ARESTA + 2 if selecionado_conectado else ESPESSURA_ARESTA
+            connected_selected = self.selected in (u, v)
+            cor = COLOR_SELECTED if connected_selected else COLOR_EDGE
+            width = BORDER_WIDTH + 2 if connected_selected else BORDER_WIDTH
 
             # Encurta a linha para não cobrir os círculos dos vértices
             dx, dy = x2 - x1, y2 - y1
-            dist   = math.hypot(dx, dy) or 1
-            ox, oy = dx / dist * RAIO, dy / dist * RAIO
+            dist = math.hypot(dx, dy) or 1
+            ox, oy = dx / dist * RADIUS, dy / dist * RADIUS
 
             self.canvas.create_line(
                 x1 + ox, y1 + oy,
@@ -208,96 +215,96 @@ class GrafoApp(ctk.CTk):
                 font=("Helvetica", 9),
             )
 
-    def _desenhar_vertices(self):
-        for nome, (cx, cy) in self.coords.items():
-            hub = self.hubs[nome]
+    def _draw_vertices(self):
+        for name, (cx, cy) in self.coords.items():
+            hub = self.hubs[name]
 
-            if nome == self.selecionado:
-                fill  = COR_SELECIONADO
-                borda = COR_BORDA
-                raio  = RAIO + 4
-                borda_w = ESPESSURA_BORDA + 1
-            elif nome == self.hover_vertice:
-                fill  = COR_HOVER
-                borda = cor_borda(hub)
-                raio  = RAIO + 2
-                borda_w = ESPESSURA_BORDA
+            if name == self.selected:
+                fill = COLOR_SELECTED
+                border = COLOR_BORDER
+                radius = RADIUS + 4
+                border_w = BORDER_WIDTH + 1
+            elif name == self.hover_vertex:
+                fill = COLOR_HOVER
+                border = color_border(hub)
+                radius = RADIUS + 2
+                border_w = BORDER_WIDTH
             else:
-                fill  = cor_vertice(hub)
-                borda = cor_borda(hub)
-                raio  = RAIO
-                borda_w = ESPESSURA_BORDA
+                fill = color_vertex(hub)
+                border = color_border(hub)
+                radius = RADIUS
+                border_w = BORDER_WIDTH
 
             self.canvas.create_oval(
-                cx - raio, cy - raio, cx + raio, cy + raio,
-                fill=fill, outline=borda, width=borda_w,
+                cx - radius, cy - radius, cx + radius, cy + radius,
+                fill=fill, outline=border, width=border_w,
             )
             self.canvas.create_text(
                 cx, cy,
-                text=nome,
-                fill=COR_TEXTO,
+                text=name,
+                fill=COLOR_TEXT,
                 font=("Helvetica", 13, "bold"),
             )
 
     # ── Eventos ─────────────────────────────────────────────────────────────
 
-    def _vertice_em(self, x: float, y: float) -> Optional[str]:
-        for nome, (cx, cy) in self.coords.items():
-            if math.hypot(x - cx, y - cy) <= RAIO + 4:
-                return nome
+    def _vertex_in(self, x: float, y: float) -> Optional[str]:
+        for name, (cx, cy) in self.coords.items():
+            if math.hypot(x - cx, y - cy) <= RADIUS + 4:
+                return name
         return None
 
     def _on_hover(self, event):
-        v = self._vertice_em(event.x, event.y)
-        if v != self.hover_vertice:
-            self.hover_vertice = v
-            self._desenhar_grafo()
+        v = self._vertex_in(event.x, event.y)
+        if v != self.hover_vertex:
+            self.hover_vertex = v
+            self._draw_graph()
 
     def _on_click(self, event):
-        v = self._vertice_em(event.x, event.y)
+        v = self._vertex_in(event.x, event.y)
         if v:
-            self.selecionado = None if v == self.selecionado else v
-            self._atualizar_info()
-            self._desenhar_grafo()
+            self.selected = None if v == self.selected else v
+            self._update_info()
+            self._draw_graph()
 
     def _on_leave(self, event):
-        self.hover_vertice = None
-        self._desenhar_grafo()
+        self.hover_vertex = None
+        self._draw_graph()
 
     def _resetar(self):
-        self.selecionado   = None
-        self.hover_vertice = None
+        self.selected = None
+        self.hover_vertex = None
         self.label_info.configure(text="")
-        self._desenhar_grafo()
+        self._draw_graph()
 
-    def _atualizar_info(self):
-        if not self.selecionado:
+    def _update_info(self):
+        if not self.selected:
             self.label_info.configure(text="")
             return
 
-        hub = self.hubs[self.selecionado]
-        vizinhos = [
-            v for u, v in self.arestas if u == self.selecionado
+        hub = self.hubs[self.selected]
+        neighbors = [
+            v for u, v in self.arestas if u == self.selected
         ] + [
-            u for u, v in self.arestas if v == self.selecionado
+            u for u, v in self.arestas if v == self.selected
         ]
 
         meta = hub.metadata or {}
-        detalhes = []
+        details = []
         if meta.get("zone"):
-            detalhes.append(f"zona: {meta['zone']}")
+            details.append(f"zona: {meta['zone']}")
         if meta.get("max_drones") is not None:
-            detalhes.append(f"max drones: {meta['max_drones']}")
+            details.append(f"max drones: {meta['max_drones']}")
         if hub.start:
-            detalhes.append("início")
+            details.append("início")
         if hub.end:
-            detalhes.append("fim")
+            details.append("fim")
 
         info = (
-            f"Hub {self.selecionado}  ·  grau {len(vizinhos)}  ·  "
-            f"vizinhos: {', '.join(sorted(vizinhos))}"
+            f"Hub {self.selected}  ·  grau {len(neighbors)}  ·  "
+            f"vizinhos: {', '.join(sorted(neighbors))}"
         )
-        if detalhes:
-            info += f"  ·  {' · '.join(detalhes)}"
+        if details:
+            info += f"  ·  {' · '.join(details)}"
 
         self.label_info.configure(text=info)
