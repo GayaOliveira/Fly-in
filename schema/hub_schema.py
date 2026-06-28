@@ -18,8 +18,8 @@ class MetadataParameters(Enum):
 
 
 class ZoneTypes(Enum):
+    NORMAL = "normal"
     BLOCKED = "blocked"
-    COMMON = "common"
     PRIORITY = "priority"
     RESTRICTED = "restricted"
 
@@ -63,7 +63,7 @@ class HubSchema(BaseModel):
         validated_metadata: HubMetadata = {}
 
         if MetadataParameters.ZONE.value not in metadata:
-            validated_metadata["zone"] = ZoneTypes.COMMON.value
+            validated_metadata["zone"] = ZoneTypes.NORMAL.value
 
         if MetadataParameters.MAX_DRONES.value not in metadata:
             validated_metadata["max_drones"] = 1
