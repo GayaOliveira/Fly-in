@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 import customtkinter as ctk
-from entity import Map, Hub, Connection
+from entity import Chart, Hub, Connection
 
 
 # ── Configuração do tema ─────────────────────────────────────────────────────
@@ -102,10 +102,10 @@ def triangle_points(
 
 class GraphApp(ctk.CTk):
     def __init__(
-            self, map_obj: Map, drone_path: list[Hub] | None = None
+            self, chart: Chart, drone_path: list[Hub] | None = None
     ) -> None:
         """
-        map_obj    : objeto com hubs, conexões e drone (sempre 1)
+        chart    : objeto com hubs, conexões e drone (sempre 1)
         drone_path : caminho retornado por Dijkstra.dijkstra() (lista de Hub);
                      se None, o grafo é exibido sem animação
         """
@@ -114,8 +114,8 @@ class GraphApp(ctk.CTk):
         self.resizable(False, False)
 
         # Índices de acesso rápido
-        self.hubs: dict[str, Hub] = {hub.name: hub for hub in map_obj.hubs}
-        self.connections: list[Connection] = map_obj.connections
+        self.hubs: dict[str, Hub] = {hub.name: hub for hub in chart.hubs}
+        self.connections: list[Connection] = chart.connections
 
         # Arestas como pares de nomes para facilitar buscas
         self.edges: list[tuple[str, str]] = [
@@ -123,7 +123,7 @@ class GraphApp(ctk.CTk):
             for conn in self.connections
         ]
 
-        self.coords = map_coords(map_obj.hubs, CANVAS_W, CANVAS_H, MARGIN)
+        self.coords = map_coords(chart.hubs, CANVAS_W, CANVAS_H, MARGIN)
         self.selected: Optional[str] = None
         self.hover_vertex: Optional[str] = None
 

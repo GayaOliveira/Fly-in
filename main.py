@@ -1,8 +1,8 @@
 from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
-from gui import GrafoApp
-from entity import Map, Drone
+from gui import GraphApp
+from entity import Chart, Drone
 from dijkstra import Dijkstra
 
 if __name__ == "__main__":
@@ -13,26 +13,12 @@ if __name__ == "__main__":
         parser = Parser(raw)
         data = parser.parse()
 
-        map_obj = Map.from_parsed(data)
+        chart = Chart.from_parsed(data)
 
-        Dijkstra(map_obj).move_drone(Drone((0, 0)))
+        Dijkstra(chart).move_drone(Drone((0, 0)))
+        path = Dijkstra(chart).dijkstra()[1]
 
-        # print("nb_drones =>", data["nb_drones"])
-
-        # print()
-
-        # for element in data["hubs"]:
-        #     print(element)
-
-        # print()
-
-        # for element in data["connections"]:
-        #     print(
-        #         f"{element.hub_pair[0].name}-{element.hub_pair[1].name} "
-        #         f"max_link_capacity = {element.max_link_capacity}"
-        #         )
-
-        app = GrafoApp(data)
+        app = GraphApp(chart, path)
         app.mainloop()
 
     except ParseError as error:

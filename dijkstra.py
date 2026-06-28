@@ -1,33 +1,21 @@
-from entity import Map, Hub, Drone
+from entity import Chart, Hub, Drone
 import heapq
 
 
-# graph = {
-#     start: [
-#         (class_fast_junction, 1),
-#         (class_slow_path1, 1)
-#     ],
-#     fast_junction: [
-#         (class_start, 1),
-#         (class_fast_path, 1),
-#     ]
-# }
-
-
 class Dijkstra:
-    def __init__(self, map_obj: Map) -> None:
-        self.map_obj = map_obj
+    def __init__(self, chart: Chart) -> None:
+        self.chart = chart
 
     def dijkstra(self) -> tuple[int, list[Hub]]:
-        neighbors = {hub: [] for hub in self.map_obj.hubs}
+        neighbors = {hub: [] for hub in self.chart.hubs}
 
-        for connection in self.map_obj.connections:
+        for connection in self.chart.connections:
             hub_a, hub_b = connection.hub_pair
             neighbors[hub_a].append(hub_b)
             neighbors[hub_b].append(hub_a)
 
-        start = self.map_obj.start_hub
-        end = self.map_obj.end_hub
+        start = self.chart.start_hub
+        end = self.chart.end_hub
 
         counter = 0
         heap = [(
