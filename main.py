@@ -2,7 +2,7 @@ from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
 from gui import GraphApp
-from entity import Chart, Drone
+from entity import Graph, Drone
 from dijkstra import Dijkstra
 
 if __name__ == "__main__":
@@ -13,12 +13,12 @@ if __name__ == "__main__":
         parser = Parser(raw)
         data = parser.parse()
 
-        chart = Chart.from_parsed(data)
+        graph = Graph.from_parsed(data)
 
-        Dijkstra(chart).move_drone(Drone((0, 0)))
-        path = Dijkstra(chart).dijkstra()[1]
+        Dijkstra(graph).move_drone(Drone((0, 0)))
+        path = Dijkstra(graph).dijkstra()[1]
 
-        app = GraphApp(chart, path)
+        app = GraphApp(graph, path)
         app.mainloop()
 
     except ParseError as error:

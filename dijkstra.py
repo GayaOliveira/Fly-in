@@ -1,21 +1,27 @@
-from entity import Chart, Hub, Drone
+from entity import Graph, Hub, Drone
+from typing import Protocol
 import heapq
 
 
-class Dijkstra:
-    def __init__(self, chart: Chart) -> None:
-        self.chart = chart
+class Pathfinder(Protocol):
+    def find_path(self):
+        pass
 
-    def dijkstra(self) -> tuple[int, list[Hub]]:
-        neighbors = {hub: [] for hub in self.chart.hubs}
 
-        for connection in self.chart.connections:
+class Dijkstra(Pathfinder):
+    def __init__(self, graph: Graph) -> None:
+        self.graph = graph
+
+    def find_path(self) -> tuple[int, list[Hub]]:
+        neighbors = {hub: [] for hub in self.graph.hubs}
+
+        for connection in self.graph.connections:
             hub_a, hub_b = connection.hub_pair
             neighbors[hub_a].append(hub_b)
             neighbors[hub_b].append(hub_a)
 
-        start = self.chart.start_hub
-        end = self.chart.end_hub
+        start = self.graph.start_hub
+        end = self.graph.end_hub
 
         counter = 0
         heap = [(

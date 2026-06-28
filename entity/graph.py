@@ -4,7 +4,7 @@ from .connection import Connection
 from .drone import Drone
 
 
-class Chart:
+class Graph:
     def __init__(
         self,
         drones: list[Drone],
