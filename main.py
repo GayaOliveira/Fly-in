@@ -2,8 +2,9 @@ from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
 from gui import GraphApp
-from entity import Graph, Drone
-from dijkstra import Dijkstra
+from entity import Graph
+from pathfinder import Dijkstra
+from simulation import Simulator
 
 if __name__ == "__main__":
     try:
@@ -15,8 +16,10 @@ if __name__ == "__main__":
 
         graph = Graph.from_parsed(data)
 
-        Dijkstra(graph).move_drone(Drone((0, 0)))
-        path = Dijkstra(graph).dijkstra()[1]
+        pathfinder = Dijkstra()
+
+        simulator = Simulator(graph)
+        simulator.simulate(pathfinder)
 
         app = GraphApp(graph, path)
         app.mainloop()
