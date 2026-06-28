@@ -10,7 +10,7 @@ class Pathfinder(Protocol):
 
 class Dijkstra(Pathfinder):
     def find_path(self, graph: Graph) -> tuple[int, list[Hub]]:
-        neighbors = {hub: [] for hub in graph.hubs}
+        neighbors: dict[Hub, list[Hub]] = {hub: [] for hub in graph.hubs}
 
         for connection in graph.connections:
             hub_a, hub_b = connection.hub_pair
@@ -20,9 +20,11 @@ class Dijkstra(Pathfinder):
         start = graph.start_hub
         end = graph.end_hub
 
+        priority = 1
         counter = 0
         heap = [(
             0,
+            priority,
             counter,
             start,
             [start]
@@ -31,7 +33,7 @@ class Dijkstra(Pathfinder):
         visited = set()
 
         while heap:
-            cost, _, current, path = heapq.heappop(heap)
+            cost, _, _, current, path = heapq.heappop(heap)
 
             if current in visited:
                 continue
@@ -42,16 +44,30 @@ class Dijkstra(Pathfinder):
                 return cost, path
 
             for neighbor in neighbors[current]:
-                if neighbor not in visited:
-                    counter += 1
-                    heapq.heappush(
-                        heap,
-                        (
-                            cost + 1,
-                            counter,
-                            neighbor,
-                            path + [neighbor]
-                        )
+                if neighbor in visited:
+                    continue
+
+                if neighbor.is_blocked():
+                    continue
+
+                priority = (
+                    0
+                    if neighbor.is_priority()
+                    else 1
+                )
+
+                move_cost = 2 if neighbor.is_restricted() else 1
+
+                counter += 1
+                heapq.heappush(
+                    heap,
+                    (
+                        cost + move_cost,
+                        priority,
+                        counter,
+                        neighbor,
+                        path + [neighbor]
                     )
+                )
 
         return float('inf'), []

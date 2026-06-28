@@ -9,13 +9,13 @@ class Simulator:
     def simulate(self, pathfinder: Pathfinder) -> tuple[int, list[Hub]]:
         cost, path = pathfinder.find_path(self.graph)
 
+        self.move_drone(Drone((0, 0)), cost, path)
+
         return cost, path
 
     def move_drone(self, drone: Drone, cost: int, path: list[Hub]) -> None:
         if not path:
             print(f"Drone {drone.drone_id}: nenhum caminho encontrado.")
-
-            return float('inf'), []
 
         print(
             f"Drone {drone.drone_id}: caminho encontrado com {cost} turno(s)"
