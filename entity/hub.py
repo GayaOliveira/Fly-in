@@ -34,3 +34,6 @@ class Hub:
         if self.metadata['zone'] == "priority":
             return True
         return False
+
+    def get_max_drones(self) -> int:
+        return self.metadata['max_drones']
