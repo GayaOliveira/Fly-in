@@ -24,3 +24,6 @@ class Connection:
             hub_pair=hub_pair,
             max_link_capacity=schema.max_link_capacity
         )
+
+    def __repr__(self):
+        return f"{self.hub_pair[0]}-{self.hub_pair[1]}"

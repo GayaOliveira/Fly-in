@@ -37,3 +37,6 @@ class Hub:
 
     def get_max_drones(self) -> int:
         return self.metadata['max_drones']
+
+    def __repr__(self):
+        return self.name

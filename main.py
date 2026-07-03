@@ -1,3 +1,4 @@
+from cbs import CBS
 from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
@@ -8,7 +9,7 @@ from simulation import Simulator
 
 if __name__ == "__main__":
     try:
-        loader = FileLoader("03_priority_puzzle.txt")
+        loader = FileLoader("03_ultimate_challenge.txt")
         raw = loader.get_config()
 
         parser = Parser(raw)
@@ -17,9 +18,10 @@ if __name__ == "__main__":
         graph = Graph.from_parsed(data)
 
         pathfinder = Dijkstra()
+        multi_agent_pathfinder = CBS(pathfinder)
 
         simulator = Simulator(graph)
-        simulator.simulate(pathfinder)
+        simulator.simulate(multi_agent_pathfinder)
 
         # app = GraphApp(graph, path)
         # app.mainloop()
