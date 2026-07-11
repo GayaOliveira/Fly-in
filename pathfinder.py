@@ -1,132 +1,109 @@
-# dijkstra.py
 from entity import Graph, Hub, Connection
+from planner import Constraints
 from typing import Protocol
-from dataclasses import dataclass
 import heapq
-
-
-@dataclass(frozen=True)
-class VertexConstraint:
-    hub: Hub
-    turn: int
-
-
-@dataclass(frozen=True)
-class EdgeConstraint:
-    connection: Connection   # identificador canônico da aresta
-    turn: int                # turno em que a travessia termina
 
 
 class Pathfinder(Protocol):
     def find_path(
         self,
-        graph: Graph,
-        constraints: set[VertexConstraint | EdgeConstraint],  # NOVO
+        constraints: Constraints,  # NOVO
     ) -> tuple[int, list[tuple[Hub, int]]]:     # retorna (hub, turno)
         ...
 
 
 class Dijkstra(Pathfinder):
-    def __init__(self, max_turn: int = 200) -> None:
-        self.max_turn = max_turn
+    def __init__(self, graph: Graph) -> None:
+        self.graph = graph
+        self.neighbors = self._find_neighbors()
+        self.start = graph.start_hub
+        self.end = graph.end_hub
 
     def find_path(
         self,
-        graph: Graph,
-        constraints: set[VertexConstraint | EdgeConstraint] = frozenset(),
-        max_turn: int = 200
+        constraints: Constraints,
     ) -> tuple[int, list[tuple[Hub, int]]]:
-
-        # Separa restrições por tipo para lookup O(1)
-        blocked_vertices: set[tuple[Hub, int]] = set()
-        blocked_edges:    set[tuple[Connection, int]] = set()
-
-        for c in constraints:
-            if isinstance(c, VertexConstraint):
-                blocked_vertices.add((c.hub, c.turn))
-            else:
-                blocked_edges.add((c.connection, c.turn))
-
-        # Monta adjacência: hub -> list[(vizinho, Connection)]
-        # Guarda a Connection para poder checar EdgeConstraint
-        neighbors: dict[Hub, list[tuple[Hub, Connection]]] = {
-            hub: [] for hub in graph.hubs
-        }
-
-        for connection in graph.connections:
-            hub_a, hub_b = connection.hub_pair
-            neighbors[hub_a].append((hub_b, connection))
-            neighbors[hub_b].append((hub_a, connection))
-
-        start = graph.start_hub
-        end = graph.end_hub
-
-        # Estado: (custo, priority, counter, turno, hub_atual, caminho)
-        # caminho agora é list[tuple[Hub, int]]
-        counter = 0
-        heap = [(0, 1, counter, 0, start, [(start, 0)])]
+        queue = [(0, 1, self.start, None, 0, [(self.start, 0)])]
         visited: set[tuple[Hub, int]] = set()
 
-        while heap:
-            cost, _, _, t, current, path = heapq.heappop(heap)
+        while queue:
+            cost, _, current, connection, turn, path = heapq.heappop(queue)
 
-            if (current, t) in visited:
+            if (current, turn) in visited:
                 continue
 
-            visited.add((current, t))
+            visited.add((current, turn))
 
-            if current is end:
+            if current is self.end:
                 return cost, path
 
-            if t >= max_turn:
-                continue
-
-            next_t = t + 1
+            next_turn = turn + 1
 
             # ── Opção 1: ESPERAR no hub atual ──────────────────────────
-            if (current, next_t) not in blocked_vertices:
-                state = (current, next_t)
+            if (current, next_turn) not in constraints.hubs:
+                state = (current, next_turn)
 
                 if state not in visited:
-                    counter += 1
-                    heapq.heappush(heap, (
+                    heapq.heappush(queue, (
                         cost + 1,
                         1,
-                        counter,
-                        next_t,
                         current,
-                        path + [(current, next_t)]
+                        None,
+                        next_turn,
+                        current,
+                        path + [(current, next_turn)]
                     ))
 
             # ── Opção 2: MOVER para vizinho ─────────────────────────────
-            for neighbor, connection in neighbors[current]:
+            for neighbor, connection in self.neighbors[current]:
+
                 if neighbor.is_blocked():
                     continue
 
-                # Restrição de vértice (CBS)
-                if (neighbor, next_t) in blocked_vertices:
+                # Restrição de hub
+                if (neighbor, next_turn) in constraints:
                     continue
 
-                # Restrição de aresta (CBS)
-                if (connection, next_t) in blocked_edges:
+                # Restrição de connection
+                if (connection, next_turn) in constraints:
                     continue
 
-                state = (neighbor, next_t)
+                # Capacidade ho hub atingido
+                if (neighbor, next_turn) in constraints.hubs:
+                    continue
+
+                state = (neighbor, next_turn)
 
                 if state in visited:
                     continue
 
+                move_cost = 1
                 priority = 0 if neighbor.is_priority() else 1
-                move_cost = 2 if neighbor.is_restricted() else 1
 
-                counter += 1
-                heapq.heappush(heap, (
+                if neighbor.is_restricted():
+                    move_cost = 2
+                    path += [(connection, next_turn)]
+                    next_turn += 1
+
+                path += [neighbor, next_turn]
+
+                heapq.heappush(queue, (
                     cost + move_cost,
                     priority,
-                    counter,
-                    next_t,
                     neighbor,
-                    path + [(neighbor, next_t)]
+                    connection,
+                    next_turn,
+                    path
                 ))
 
         return float('inf'), []
+
+    def _find_neighbors(self) -> dict[Hub, list[tuple[Hub, Connection]]]:
+        neighbors = {hub: [] for hub in self.graph.hubs}
+
+        for connection in self.graph.connections:
+            hub_a, hub_b = connection.hub_pair
+            neighbors[hub_a].append((hub_b, connection))
+            neighbors[hub_b].append((hub_a, connection))
+
+        return neighbors

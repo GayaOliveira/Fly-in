@@ -1,17 +1,19 @@
 from entity import Graph, Hub, Drone
-from cbs import MultiAgentPathfinder
+from pathfinder import Pathfinder
 
 
 class Simulator:
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
 
-    def simulate(
-        self,
-        pathfinder: MultiAgentPathfinder,
-    ) -> tuple[int, list[Hub]]:
+    def simulate(self, pathfinder: Pathfinder) -> None:
 
-        cost, paths = pathfinder.find_paths(self.graph)
+        # instancia o planner
+        # iterar sobre a lista de drones
+        # determinar o caminho de cada um, levando em consideração
+        # a lita crescente de restrições
+
+        cost, paths = pathfinder.find_path(self.graph)
 
         if not paths:
             print("Sem solução encontrada.")
@@ -22,10 +24,6 @@ class Simulator:
 
             for hub, turn in path:
                 print(f"  turno {turn:>3} → {hub.name}")
-
-        # self.move_drone(Drone((0, 0)), path)
-
-        # return cost, path
 
     def move_drone(self, drone: Drone, cost: int, path: list[Hub]) -> None:
         if not path:
