@@ -5,7 +5,7 @@ from entity import Graph
 from pathfinder import Dijkstra
 from planner import Planner
 # from simulation import Simulator
-# from gui import GraphApp
+from gui import GraphApp
 
 from rich import print
 
@@ -24,13 +24,13 @@ if __name__ == "__main__":
         planner = Planner(pathfinder, graph.drones)
         paths = planner.find_paths()
 
-        print(paths)
+        # print(paths)
 
         # simulator = Simulator(graph)
         # simulator.simulate(multi_agent_pathfinder)
 
-        # app = GraphApp(graph, path)
-        # app.mainloop()
+        app = GraphApp(graph, paths=paths)
+        app.mainloop()
 
     except ParseError as error:
         print(f"\033[31mError: {error}\033[m")
