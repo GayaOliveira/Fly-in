@@ -1,15 +1,17 @@
-from planner import CBS
 from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
-# from gui import GraphApp
 from entity import Graph
 from pathfinder import Dijkstra
-from simulation import Simulator
+from planner import Planner
+# from simulation import Simulator
+# from gui import GraphApp
+
+from rich import print
 
 if __name__ == "__main__":
     try:
-        loader = FileLoader("03_ultimate_challenge.txt")
+        loader = FileLoader("01_the_impossible_dream.txt")
         raw = loader.get_config()
 
         parser = Parser(raw)
@@ -17,11 +19,15 @@ if __name__ == "__main__":
 
         graph = Graph.from_parsed(data)
 
-        pathfinder = Dijkstra()
-        multi_agent_pathfinder = CBS(pathfinder)
+        pathfinder = Dijkstra(graph)
 
-        simulator = Simulator(graph)
-        simulator.simulate(multi_agent_pathfinder)
+        planner = Planner(pathfinder, graph.drones)
+        paths = planner.find_paths()
+
+        print(paths)
+
+        # simulator = Simulator(graph)
+        # simulator.simulate(multi_agent_pathfinder)
 
         # app = GraphApp(graph, path)
         # app.mainloop()

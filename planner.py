@@ -1,40 +1,35 @@
-from entity import Hub
-from entity import Connection
+from pathfinder import Pathfinder
+from entity import Hub, Connection, Drone
 
 
 class Planner:
-    def __init__(self) -> None:
-        self.paths = {
-            0: [
-                (start, 1),
-                (fast, 2),
-                (fast, 3)
-            ],
-            1: [
-                (start, 1),
-                (fast, 2),
-                (slow, 3)
-            ],
-            2: [
-                (start, 1),
-                (fast, 2),
-                (slow, 3)
-            ]
-        }
-        self.hubs = [(fast, 2), (slow, 3)]
+    def __init__(self, pathfinder: Pathfinder, drones: list[Drone]) -> None:
+        self.pathfinder = pathfinder
+        self.drones = drones
+        self.paths: dict[int, list[tuple[Hub | Connection, int]]] = {}
+        self.constraints: list[tuple[Hub | Connection, int]] = []
 
-    def add_hub(self, hub_state: tuple[Hub, int]) -> None:
-        self.hubs.add(hub_state)
+    def find_paths(self) -> dict[int, list[tuple[Hub | Connection, int]]]:
+        for drone in self.drones:
+            _, path = self.pathfinder.find_path(self.constraints)
+            self.paths[drone.drone_id] = path
+            self._update_constraints(path)
 
-    def add_connection(self, connection_state: tuple[Connection, int]) -> None:
-        self.connections.add(connection_state)
+        return self.paths
 
-    def count_state(self, state: tuple[Hub, int]) -> int:
-        count = 0
-        for path in self.paths.values():
-            if state in path:
-                count += 1
-        return count
+    def _update_constraints(
+        self,
+        new_path: list[tuple[Hub | Connection, int]]
+    ) -> None:
+        for (location, turn) in new_path:
+            if isinstance(location, Hub) and (location.start or location.end):
+                continue
 
-    def is_possible_state(self, state: tuple[Hub, int]) -> bool:
-        pass
+            occurrences = sum(
+                1
+                for path in self.paths.values()
+                if (location, turn) in path
+            )
+
+            if occurrences >= location.capacity:
+                self.constraints.append((location, turn))

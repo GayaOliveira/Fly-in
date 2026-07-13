@@ -1,14 +1,26 @@
-from entity import Graph, Hub, Connection
-from planner import Constraints
+from dataclasses import dataclass, field
 from typing import Protocol
+from itertools import count as countt
 import heapq
+
+from entity import Graph, Hub, Connection
+
+@dataclass(order=True)
+class QueueItem:
+    cost: int
+    priority: int
+    order: int
+    current: Hub = field(compare=False)
+    connection: Connection | None = field(compare=False)
+    turn: int = field(compare=False)
+    path: list[tuple[Hub | Connection, int]] = field(compare=False)
 
 
 class Pathfinder(Protocol):
     def find_path(
         self,
-        constraints: Constraints,  # NOVO
-    ) -> tuple[int, list[tuple[Hub, int]]]:     # retorna (hub, turno)
+        constraints: list[tuple[Hub | Connection, int]],  # NOVO
+    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:     # retorna (hub, turno)
         ...
 
 
@@ -21,13 +33,32 @@ class Dijkstra(Pathfinder):
 
     def find_path(
         self,
-        constraints: Constraints,
-    ) -> tuple[int, list[tuple[Hub, int]]]:
-        queue = [(0, 1, self.start, None, 0, [(self.start, 0)])]
-        visited: set[tuple[Hub, int]] = set()
+        constraints: list[tuple[Hub | Connection, int]],
+    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:
+        queue = [(0, 1, 0, self.start, None, 0, [(self.start, 0)])]
+        counter = countt()
+
+        queue = [
+            QueueItem(
+                cost=0,
+                priority=1,
+                order=next(counter),
+                current=self.start,
+                connection=None,
+                turn=0,
+                path=[(self.start, 0)]
+            )
+        ]
+
+        visited: set[tuple[Hub | Connection, int]] = set()
 
         while queue:
-            cost, _, current, connection, turn, path = heapq.heappop(queue)
+            item = heapq.heappop(queue)
+
+            cost = item.cost
+            current = item.current
+            turn = item.turn
+            path = item.path
 
             if (current, turn) in visited:
                 continue
@@ -40,36 +71,43 @@ class Dijkstra(Pathfinder):
             next_turn = turn + 1
 
             # ── Opção 1: ESPERAR no hub atual ──────────────────────────
-            if (current, next_turn) not in constraints.hubs:
+            if (current, next_turn) not in constraints:
                 state = (current, next_turn)
 
                 if state not in visited:
-                    heapq.heappush(queue, (
-                        cost + 1,
-                        1,
-                        current,
-                        None,
-                        next_turn,
-                        current,
-                        path + [(current, next_turn)]
-                    ))
+                    heapq.heappush(
+                        queue,
+                        QueueItem(
+                            cost=cost + 1,
+                            priority=1,
+                            order=next(counter),
+                            current=current,
+                            turn=next_turn,
+                            connection=None,
+                            path=path + [(current, next_turn)]
+                        )
+                    )
 
             # ── Opção 2: MOVER para vizinho ─────────────────────────────
             for neighbor, connection in self.neighbors[current]:
-
                 if neighbor.is_blocked():
                     continue
 
                 # Restrição de hub
-                if (neighbor, next_turn) in constraints:
+                if (
+                    neighbor.is_restricted()
+                    and (neighbor, next_turn + 1) in constraints
+                ):
+                    continue
+
+                if (
+                    not neighbor.is_restricted() and
+                    (neighbor, next_turn) in constraints
+                ):
                     continue
 
                 # Restrição de connection
                 if (connection, next_turn) in constraints:
-                    continue
-
-                # Capacidade ho hub atingido
-                if (neighbor, next_turn) in constraints.hubs:
                     continue
 
                 state = (neighbor, next_turn)
@@ -77,24 +115,32 @@ class Dijkstra(Pathfinder):
                 if state in visited:
                     continue
 
-                move_cost = 1
-                priority = 0 if neighbor.is_priority() else 1
+                new_turn = next_turn
+                new_cost = cost + 1
+                new_path = path.copy()
+
+                new_path.append((connection, new_turn))
 
                 if neighbor.is_restricted():
-                    move_cost = 2
-                    path += [(connection, next_turn)]
-                    next_turn += 1
+                    new_turn += 1
+                    new_cost += 1
 
-                path += [neighbor, next_turn]
+                new_path.append((neighbor, new_turn))
 
-                heapq.heappush(queue, (
-                    cost + move_cost,
-                    priority,
-                    neighbor,
-                    connection,
-                    next_turn,
-                    path
-                ))
+                heapq.heappush(
+                    queue,
+                    (
+                        QueueItem(
+                            cost=new_cost,
+                            priority=0 if neighbor.is_priority() else 1,
+                            order=next(counter),
+                            current=neighbor,
+                            turn=new_turn,
+                            connection=connection,
+                            path=new_path
+                        )
+                    )
+                )
 
         return float('inf'), []
 
