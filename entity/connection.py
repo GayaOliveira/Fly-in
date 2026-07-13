@@ -9,7 +9,7 @@ class Connection:
         max_link_capacity: int
     ) -> None:
         self.hub_pair = hub_pair
-        self.max_link_capacity = max_link_capacity
+        self.capacity = max_link_capacity
 
     @classmethod
     def from_schema(cls, schema: ConnectionSchema, hubs: list[Hub]):

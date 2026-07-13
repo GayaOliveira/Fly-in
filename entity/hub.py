@@ -15,6 +15,7 @@ class Hub:
         self.name = name
         self.coordinates = coordinates
         self.metadata = metadata
+        self.capacity = self.metadata['max_drones']
 
     @classmethod
     def from_schema(cls, schema: HubSchema):
@@ -34,9 +35,6 @@ class Hub:
         if self.metadata['zone'] == "priority":
             return True
         return False
-
-    def get_max_drones(self) -> int:
-        return self.metadata['max_drones']
 
     def __repr__(self):
         return self.name
