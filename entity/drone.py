@@ -1,5 +1,5 @@
 class Drone:
-    _next_id = 1
+    _next_id = 0
 
     def __init__(self, coordinates: tuple[int, int]) -> None:
         self.drone_id = Drone._next_id
