@@ -86,12 +86,6 @@ class A_star(Pathfinder):
                 ):
                     continue
 
-                if (
-                    neighbor.is_restricted()
-                    and (connection, turn) in constraints
-                ):
-                    continue
-
                 if (connection, next_turn) in constraints:
                     continue
 
