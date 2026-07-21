@@ -5,6 +5,7 @@ import heapq
 
 from entity import Graph, Hub, Connection
 
+
 @dataclass(order=True)
 class QueueItem:
     cost: int
@@ -19,12 +20,12 @@ class QueueItem:
 class Pathfinder(Protocol):
     def find_path(
         self,
-        constraints: list[tuple[Hub | Connection, int]],  # NOVO
-    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:     # retorna (hub, turno)
+        constraints: list[tuple[Hub | Connection, int]],
+    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:
         ...
 
 
-class Dijkstra(Pathfinder):
+class A_star(Pathfinder):
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
         self.neighbors = self._find_neighbors()
@@ -35,12 +36,11 @@ class Dijkstra(Pathfinder):
         self,
         constraints: list[tuple[Hub | Connection, int]],
     ) -> tuple[int, list[tuple[Hub | Connection, int]]]:
-        queue = [(0, 1, 0, self.start, None, 0, [(self.start, 0)])]
         counter = countt()
 
         queue = [
             QueueItem(
-                cost=0,
+                cost=self._heuristic(self.start),
                 priority=1,
                 order=next(counter),
                 current=self.start,
@@ -70,30 +70,10 @@ class Dijkstra(Pathfinder):
 
             next_turn = turn + 1
 
-            # ── Opção 1: ESPERAR no hub atual ──────────────────────────
-            if (current, next_turn) not in constraints:
-                state = (current, next_turn)
-
-                if state not in visited:
-                    heapq.heappush(
-                        queue,
-                        QueueItem(
-                            cost=cost + 1,
-                            priority=1,
-                            order=next(counter),
-                            current=current,
-                            turn=next_turn,
-                            connection=None,
-                            path=path + [(current, next_turn)]
-                        )
-                    )
-
-            # ── Opção 2: MOVER para vizinho ─────────────────────────────
             for neighbor, connection in self.neighbors[current]:
                 if neighbor.is_blocked():
                     continue
 
-                # Restrição de hub
                 if (
                     neighbor.is_restricted()
                     and (neighbor, next_turn + 1) in constraints
@@ -106,7 +86,12 @@ class Dijkstra(Pathfinder):
                 ):
                     continue
 
-                # Restrição de connection
+                if (
+                    neighbor.is_restricted()
+                    and (connection, turn) in constraints
+                ):
+                    continue
+
                 if (connection, next_turn) in constraints:
                     continue
 
@@ -131,7 +116,7 @@ class Dijkstra(Pathfinder):
                     queue,
                     (
                         QueueItem(
-                            cost=new_cost,
+                            cost=new_cost + self._heuristic(neighbor),
                             priority=0 if neighbor.is_priority() else 1,
                             order=next(counter),
                             current=neighbor,
@@ -141,6 +126,23 @@ class Dijkstra(Pathfinder):
                         )
                     )
                 )
+
+            if (current, next_turn) not in constraints:
+                state = (current, next_turn)
+
+                if state not in visited:
+                    heapq.heappush(
+                        queue,
+                        QueueItem(
+                            cost=cost + 1,
+                            priority=0,
+                            order=next(counter),
+                            current=current,
+                            turn=next_turn,
+                            connection=None,
+                            path=path + [(current, next_turn)]
+                        )
+                    )
 
         return float('inf'), []
 
@@ -153,3 +155,9 @@ class Dijkstra(Pathfinder):
             neighbors[hub_b].append((hub_a, connection))
 
         return neighbors
+
+    def _heuristic(self, current: Hub) -> int:
+        x1, y1 = current.coordinates
+        x2, y2 = self.end.coordinates
+
+        return abs(x1 - x2) + abs(y1 - y2)

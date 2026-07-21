@@ -6,8 +6,8 @@ from pydantic import ValidationError
 
 class Parsed(TypedDict):
     nb_drones: int
-    hubs = list[HubSchema]
-    connections = list[ConnectionSchema]
+    hubs: list[HubSchema]
+    connections: list[ConnectionSchema]
 
 
 class Parser:
