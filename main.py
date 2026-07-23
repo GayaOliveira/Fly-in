@@ -2,16 +2,16 @@ from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser
 from entity import Graph
-from pathfinder import Dijkstra
+from pathfinder import A_star
 from planner import Planner
-# from simulation import Simulator
-from gui import GraphApp
+from gui import SimulationWindow
 
-from rich import print
+import sys
+
 
 if __name__ == "__main__":
     try:
-        loader = FileLoader("01_the_impossible_dream.txt")
+        loader = FileLoader(sys.argv[1])
         raw = loader.get_config()
 
         parser = Parser(raw)
@@ -19,17 +19,12 @@ if __name__ == "__main__":
 
         graph = Graph.from_parsed(data)
 
-        pathfinder = Dijkstra(graph)
+        pathfinder = A_star(graph)
 
         planner = Planner(pathfinder, graph.drones)
         paths = planner.find_paths()
 
-        # print(paths)
-
-        # simulator = Simulator(graph)
-        # simulator.simulate(multi_agent_pathfinder)
-
-        app = GraphApp(graph, paths=paths)
+        app = SimulationWindow(graph, paths)
         app.mainloop()
 
     except ParseError as error:

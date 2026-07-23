@@ -1,4 +1,4 @@
-NAME = main.py
+NAME = app.py
 MYPY_FLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 PYTHON = .venv/bin/python
 
