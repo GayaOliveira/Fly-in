@@ -1,3 +1,5 @@
+"""Public entity package exposing the core domain model classes."""
+
 from .graph import Graph
 from .hub import Hub
 from .drone import Drone

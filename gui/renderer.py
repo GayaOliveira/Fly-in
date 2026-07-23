@@ -1,24 +1,68 @@
 import customtkinter as ctk
-from entity import Graph, Hub, Connection
+from entity import Graph, Hub
 from .state import SimulationState
 from .snapshot import TurnSnapshot
 from .constants import VisualConstants
 
 
 class GraphRenderer:
-    """Responsible solely for drawing the graph, vertices, edges, and drones on the canvas."""
+    """Responsible solely for drawing the graph, vertices, edges, and drones on the canvas.
+
+    Attributes:
+        graph (Graph): Graph to render.
+        compact_graph (bool): Whether the graph is dense/large enough
+            that capacity labels should be hidden by default (shown
+            only on hover/selection) to reduce visual clutter.
+    """
     def __init__(self, graph: Graph, compact_graph: bool) -> None:
+        """Initializes the renderer for a given graph.
+
+        Args:
+            graph (Graph): Graph to render.
+            compact_graph (bool): Whether to hide capacity labels by
+                default for a denser visual layout.
+
+        Returns:
+            None
+        """
         self.graph: Graph = graph
         self.compact_graph: bool = compact_graph
 
     def render(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
-        """Deletes all canvas items and redraws the updated simulation frame."""
+        """Deletes all canvas items and redraws the updated simulation frame.
+
+        Args:
+            canvas (ctk.CTkCanvas): Canvas to draw onto.
+            state (SimulationState): Current visual state (selection,
+                hover, coordinate mapper).
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         canvas.delete("all")
         self._draw_edges(canvas, state, snapshot)
         self._draw_vertices(canvas, state, snapshot)
         self._draw_drones(canvas, state, snapshot)
 
     def _draw_edges(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+        """Draws every connection as a line, with styling based on its state.
+
+        Colors and widens edges according to saturation, hover, and
+        selection state, and optionally draws a capacity indicator
+        label at the edge's midpoint.
+
+        Args:
+            canvas (ctk.CTkCanvas): Canvas to draw onto.
+            state (SimulationState): Current visual state (selection,
+                hover, coordinate mapper).
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         mapper = state.coordinate_mapper
         for conn in self.graph.connections:
             u, v = conn.hub_pair[0].name, conn.hub_pair[1].name
@@ -85,6 +129,22 @@ class GraphRenderer:
                 )
 
     def _draw_vertices(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+        """Draws every hub as a circular marker, with styling based on its state.
+
+        Colors, borders, and sizes each hub marker according to
+        saturation, hover, and selection state, and optionally draws a
+        capacity indicator label below it.
+
+        Args:
+            canvas (ctk.CTkCanvas): Canvas to draw onto.
+            state (SimulationState): Current visual state (selection,
+                hover, coordinate mapper).
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         mapper = state.coordinate_mapper
         for hub in self.graph.hubs:
             name = hub.name
@@ -137,6 +197,18 @@ class GraphRenderer:
                 )
 
     def _draw_drones(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+        """Draws every drone at its current hub or in-transit position.
+
+        Args:
+            canvas (ctk.CTkCanvas): Canvas to draw onto.
+            state (SimulationState): Current visual state (coordinate
+                mapper).
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         mapper = state.coordinate_mapper
 
         # Render drones placed at hubs
@@ -168,7 +240,20 @@ class GraphRenderer:
         y: float,
         is_waiting: bool
     ) -> None:
-        """Draws the representation of a single drone badge with its ID and optional waiting halo."""
+        """Draws the representation of a single drone badge with its ID and optional waiting halo.
+
+        Args:
+            canvas (ctk.CTkCanvas): Canvas to draw onto.
+            drone_id (int): ID of the drone, displayed as the badge's
+                label.
+            x (float): X coordinate to center the badge at.
+            y (float): Y coordinate to center the badge at.
+            is_waiting (bool): Whether to draw a dashed halo indicating
+                the drone is waiting/delayed.
+
+        Returns:
+            None
+        """
         drone_r = 10
 
         # Draw dotted halo if waiting/delayed
@@ -195,12 +280,29 @@ class GraphRenderer:
         )
 
     def _color_vertex(self, hub: Hub) -> str:
-        """Returns the fill color for a vertex, prioritizing metadata.color."""
+        """Returns the fill color for a vertex, prioritizing metadata.color.
+
+        Args:
+            hub (Hub): Hub whose fill color should be determined.
+
+        Returns:
+            str: The hub's custom color if set in its metadata,
+            otherwise the default vertex color.
+        """
         color = (hub.metadata or {}).get("color")
         return color if color else VisualConstants.COLOR_VERTEX
 
     def _color_border(self, hub: Hub) -> str:
-        """Returns start, end, or default border color."""
+        """Returns start, end, or default border color.
+
+        Args:
+            hub (Hub): Hub whose border color should be determined.
+
+        Returns:
+            str: The start-hub border color if ``hub`` is the start
+            hub, the end-hub border color if it is the end hub, or the
+            default border color otherwise.
+        """
         if hub.start:
             return VisualConstants.COLOR_BORDER_START
         if hub.end:

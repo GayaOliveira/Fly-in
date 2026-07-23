@@ -6,18 +6,46 @@ from matplotlib.colors import is_color_like
 
 
 class HubMetadata(TypedDict):
+    """Typed mapping describing the optional metadata of a hub.
+
+    Attributes:
+        color (Optional[str]): Display color of the hub, as a
+            matplotlib-compatible color name.
+        max_drones (Optional[int]): Maximum number of drones allowed
+            to occupy the hub simultaneously.
+        zone (Optional[str]): Zone type of the hub (see
+            :class:`ZoneTypes`).
+    """
+
     color: Optional[str]
     max_drones: Optional[int]
     zone: Optional[str]
 
 
 class MetadataParameters(Enum):
+    """Enumeration of the metadata keys accepted for a hub.
+
+    Attributes:
+        COLOR: Key used to specify the hub's display color.
+        MAX_DRONES: Key used to specify the hub's drone capacity.
+        ZONE: Key used to specify the hub's zone type.
+    """
+
     COLOR = "color"
     MAX_DRONES = "max_drones"
     ZONE = "zone"
 
 
 class ZoneTypes(Enum):
+    """Enumeration of the valid zone types a hub can belong to.
+
+    Attributes:
+        NORMAL: Default zone with no special behavior.
+        BLOCKED: Zone that drones cannot traverse.
+        PRIORITY: Zone that grants pathfinding priority.
+        RESTRICTED: Zone with additional traversal restrictions.
+    """
+
     NORMAL = "normal"
     BLOCKED = "blocked"
     PRIORITY = "priority"
@@ -25,6 +53,17 @@ class ZoneTypes(Enum):
 
 
 class HubSchema(BaseModel):
+    """Pydantic schema used to validate and parse a hub definition.
+
+    Attributes:
+        start (bool): Whether this hub is the start hub of the graph.
+        end (bool): Whether this hub is the end hub of the graph.
+        name (str): Unique name identifying the hub.
+        coordinates (tuple[int, int]): Logical (x, y) coordinates of
+            the hub.
+        metadata (HubMetadata): Parsed optional metadata for the hub.
+    """
+
     start: bool
     end: bool
     name: str = Field(min_length=1)
@@ -34,6 +73,21 @@ class HubSchema(BaseModel):
     @field_validator("name", mode="before")
     @classmethod
     def validate_name(cls, name: str) -> str:
+        """Validates that the hub name does not contain dashes.
+
+        Dashes are reserved as the separator token used when parsing
+        connections (e.g. ``hub_a-hub_b``), so hub names must not
+        contain them.
+
+        Args:
+            name (str): Raw hub name to validate.
+
+        Returns:
+            str: The validated hub name, unchanged.
+
+        Raises:
+            ValueError: If the name contains a dash character.
+        """
 
         if "-" in name:
             raise ValueError("Name cannot contain dashes")
@@ -43,6 +97,20 @@ class HubSchema(BaseModel):
     @field_validator("coordinates", mode="before")
     @classmethod
     def validate_coordinates(cls, coordinates: str) -> tuple[int, int]:
+        """Parses and validates a raw ``"x,y"`` coordinate string.
+
+        Args:
+            coordinates (str): Raw coordinate string in the form
+                ``"x,y"``.
+
+        Returns:
+            tuple[int, int]: The parsed ``(x, y)`` integer coordinate
+            pair.
+
+        Raises:
+            ValueError: If ``x`` or ``y`` cannot be parsed as
+                integers.
+        """
         x, y = coordinates.split(",")
 
         try:
@@ -57,6 +125,25 @@ class HubSchema(BaseModel):
     @field_validator("metadata", mode="before")
     @classmethod
     def validate_metadata(cls, metadata: str) -> HubMetadata:
+        """Parses and validates a raw comma-separated metadata string.
+
+        Splits the input into ``key=value`` tokens, validates each
+        recognized key (``color``, ``max_drones``, ``zone``), applies
+        defaults for ``zone`` and ``max_drones`` when absent, and
+        rejects unknown or duplicated keys.
+
+        Args:
+            metadata (str): Raw metadata string, e.g.
+                ``"color=blue,max_drones=2"``.
+
+        Returns:
+            HubMetadata: The parsed and validated hub metadata.
+
+        Raises:
+            ValueError: If a token uses an unknown or duplicated key,
+                or if ``color``, ``max_drones``, or ``zone`` hold an
+                invalid value.
+        """
 
         tokens = metadata.split(",")
 

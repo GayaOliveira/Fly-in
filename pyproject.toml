@@ -12,5 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "flake8>=7.3.0",
+    "mypy>=2.3.0",
     "rich>=15.0.0",
 ]

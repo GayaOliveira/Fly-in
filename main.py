@@ -1,3 +1,9 @@
+"""Entry point: loads a map file, plans drone paths, and launches the GUI.
+
+Usage:
+    python main.py <path_to_map_file>
+"""
+
 from errors import ParseError
 from file_loader import FileLoader
 from parser import Parser

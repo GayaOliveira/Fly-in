@@ -14,6 +14,31 @@ from .renderer import GraphRenderer
 
 
 class SimulationWindow(ctk.CTk):
+    """Top-level CustomTkinter window hosting the drone simulation GUI.
+
+    Wires together the model (simulation data), state (visual state),
+    controller (interaction logic), coordinate mapper, inspector
+    (hit-testing), and renderer (drawing) into a single interactive
+    window with playback controls, a turn slider, and hover/click
+    inspection of hubs and connections.
+
+    Attributes:
+        model (SimulationModel): Simulation data and precomputed
+            per-turn snapshots.
+        coordinate_mapper (CoordinateMapper): Mapper from graph
+            coordinates to canvas coordinates.
+        state (SimulationState): Current visual state (selection,
+            hover, current turn, playback status).
+        controller (SimulationController): Handles state mutations
+            triggered by user interaction.
+        inspector (GraphInspector): Resolves canvas positions into
+            hubs or connections.
+        renderer (GraphRenderer): Draws the graph, hubs, connections,
+            and drones onto the canvas.
+        play_speed_ms (int): Delay, in milliseconds, between automatic
+            turn advances during playback.
+    """
+
     def __init__(
         self,
         graph: Graph,
@@ -22,6 +47,18 @@ class SimulationWindow(ctk.CTk):
         ] = None,
         drone_path: Optional[List[Hub]] = None
     ) -> None:
+        """Builds the simulation window and renders its initial frame.
+
+        Args:
+            graph (Graph): Graph to visualize.
+            paths (Optional[Dict[int, List[Tuple[Union[Hub, Connection], int]]]]):
+                Mapping from drone ID to its full trajectory.
+            drone_path (Optional[List[Hub]]): Legacy single-drone
+                trajectory expressed as a plain list of hubs.
+
+        Returns:
+            None
+        """
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
@@ -67,6 +104,15 @@ class SimulationWindow(ctk.CTk):
         self.render()
 
     def _build_ui(self) -> None:
+        """Builds and lays out all widgets composing the window's UI.
+
+        Creates the title, summary label, legend, canvas, info label,
+        playback controls (reset, back, play/pause, forward), and
+        detail label, and binds canvas mouse events to their handlers.
+
+        Returns:
+            None
+        """
         frame = ctk.CTkFrame(self, fg_color="#16213e", corner_radius=0)
         frame.pack(fill="both", expand=True)
 
@@ -219,12 +265,33 @@ class SimulationWindow(ctk.CTk):
         self.canvas.bind("<Leave>",    self._on_leave)
 
     def _on_slider_change(self, value: float) -> None:
+        """Handles the turn slider being dragged by the user.
+
+        Pauses playback if it was running, updates the current turn to
+        match the slider, and re-renders the frame.
+
+        Args:
+            value (float): New slider value, rounded to the nearest
+                turn index.
+
+        Returns:
+            None
+        """
         if self.state.is_playing:
             self._on_toggle_play()
         self.controller.set_turn(int(round(value)))
         self.render()
 
     def _on_toggle_play(self) -> None:
+        """Handles the play/pause button being clicked.
+
+        Toggles the playback state, updates the button's label and
+        colors accordingly, and starts the playback tick loop if
+        playback was just enabled.
+
+        Returns:
+            None
+        """
         self.controller.toggle_play()
         if self.state.is_playing:
             self.btn_play.configure(
@@ -241,6 +308,16 @@ class SimulationWindow(ctk.CTk):
             )
 
     def _tick_simulation(self) -> None:
+        """Advances the simulation by one turn on a recurring timer.
+
+        While playback is active and the maximum turn has not been
+        reached, steps forward, re-renders, and schedules itself again
+        after ``play_speed_ms``. Stops playback automatically once the
+        maximum turn is reached.
+
+        Returns:
+            None
+        """
         if not self.state.is_playing:
             return
 
@@ -257,24 +334,61 @@ class SimulationWindow(ctk.CTk):
             )
 
     def _on_step_forward(self) -> None:
+        """Handles the "advance" button being clicked.
+
+        Pauses playback if running, steps forward one turn, and
+        re-renders.
+
+        Returns:
+            None
+        """
         if self.state.is_playing:
             self._on_toggle_play()
         self.controller.step_forward()
         self.render()
 
     def _on_step_back(self) -> None:
+        """Handles the "back" button being clicked.
+
+        Pauses playback if running, steps backward one turn, and
+        re-renders.
+
+        Returns:
+            None
+        """
         if self.state.is_playing:
             self._on_toggle_play()
         self.controller.step_backward()
         self.render()
 
     def _on_reset(self) -> None:
+        """Handles the "reset" button being clicked.
+
+        Pauses playback if running, resets the simulation state, and
+        re-renders.
+
+        Returns:
+            None
+        """
         if self.state.is_playing:
             self._on_toggle_play()
         self.controller.reset()
         self.render()
 
     def _on_hover(self, event) -> None:
+        """Handles mouse movement over the canvas.
+
+        Performs a hit test at the cursor position and, if the
+        hovered hub or connection changed, updates the state and
+        re-renders.
+
+        Args:
+            event: Tkinter mouse motion event carrying the cursor's
+                ``x``/``y`` canvas coordinates.
+
+        Returns:
+            None
+        """
         hit = self.inspector.inspect(event.x, event.y)
         changed = (
             self.state.hover_vertex != hit.hub or
@@ -285,22 +399,63 @@ class SimulationWindow(ctk.CTk):
             self.render()
 
     def _on_click(self, event) -> None:
+        """Handles mouse clicks on the canvas.
+
+        Performs a hit test at the click position and, if a hub was
+        clicked, toggles its selection and re-renders.
+
+        Args:
+            event: Tkinter mouse click event carrying the click's
+                ``x``/``y`` canvas coordinates.
+
+        Returns:
+            None
+        """
         hit = self.inspector.inspect(event.x, event.y)
         if hit.hub:
             self.controller.select_hub(hit.hub)
             self.render()
 
     def _on_leave(self, event) -> None:
+        """Handles the mouse cursor leaving the canvas.
+
+        Clears any hover state and re-renders.
+
+        Args:
+            event: Tkinter event fired when the cursor leaves the
+                canvas.
+
+        Returns:
+            None
+        """
         self.controller.clear_hover()
         self.render()
 
     def render(self) -> None:
+        """Redraws the canvas and refreshes all UI labels for the current turn.
+
+        Returns:
+            None
+        """
         snapshot = self.model.get_snapshot(self.state.current_turn)
         self.renderer.render(self.canvas, self.state, snapshot)
         self._update_ui_state(snapshot)
         self._update_hover_info(snapshot)
 
     def _update_ui_state(self, snapshot: TurnSnapshot) -> None:
+        """Updates the turn slider, turn label, and drone status summary.
+
+        Counts how many drones are waiting, in transit, or have
+        finished at the given snapshot, and updates the info label
+        accordingly.
+
+        Args:
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         self.slider.set(self.state.current_turn)
         self.lbl_turn.configure(
             text=f"Turno: {self.state.current_turn} / {self.model.max_turn}"
@@ -329,6 +484,20 @@ class SimulationWindow(ctk.CTk):
         self.label_info.configure(text=status_text)
 
     def _update_hover_info(self, snapshot: TurnSnapshot) -> None:
+        """Updates the details label based on the selected/hovered element.
+
+        Shows hub details (zone, capacity, start/end status, degree,
+        and neighbors) when a hub is selected or hovered, connection
+        details (endpoints, active capacity, saturation warning) when
+        a connection is hovered, or a generic hint otherwise.
+
+        Args:
+            snapshot (TurnSnapshot): Simulation data for the turn being
+                displayed.
+
+        Returns:
+            None
+        """
         target_hub = self.state.selected_hub or self.state.hover_vertex
         if target_hub:
             meta = target_hub.metadata or {}
