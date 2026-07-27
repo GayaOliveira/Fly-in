@@ -16,6 +16,13 @@ class Hub:
             simultaneously, taken from ``metadata['max_drones']``.
     """
 
+    start: bool
+    end: bool
+    name: str
+    coordinates: tuple[int, int]
+    metadata: HubMetadata
+    capacity: int
+
     def __init__(
         self,
         start: bool,
@@ -43,10 +50,10 @@ class Hub:
         self.name = name
         self.coordinates = coordinates
         self.metadata = metadata
-        self.capacity = self.metadata['max_drones']
+        self.capacity = int(self.metadata.get('max_drones', 1) or 1)
 
     @classmethod
-    def from_schema(cls, schema: HubSchema):
+    def from_schema(cls, schema: HubSchema) -> "Hub":
         """Builds a :class:`Hub` instance from a validated schema.
 
         Args:
@@ -92,7 +99,7 @@ class Hub:
             return True
         return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Returns the hub's name as its debug representation.
 
         Returns:

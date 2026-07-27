@@ -64,7 +64,7 @@ class FileLoader:
             return False
         return True
 
-    def get_config(self) -> dict[str, str]:
+    def get_config(self) -> list[tuple[str, str]]:
         """Reads, validates, and returns the raw configuration entries.
 
         Opens the configuration file, processes each non-blank,
@@ -73,9 +73,8 @@ class FileLoader:
         mandatory keys).
 
         Returns:
-            dict[str, str]: The ordered list of ``(key, value)`` pairs
-            parsed from the file. (Despite the declared return type,
-            this returns the same list stored in ``self.config``.)
+            list[tuple[str, str]]: The ordered list of ``(key, value)``
+            pairs parsed from the file.
 
         Raises:
             ParseError: If the file cannot be found, cannot be read
@@ -100,12 +99,12 @@ class FileLoader:
                     if ":" not in line:
                         raise ParseError(f"Invalid line: '{line}'")
 
-                    line = line.split(": ", 1)
+                    parts = line.split(": ", 1)
 
-                    if len(line) <= 1:
+                    if len(parts) <= 1:
                         raise ParseError(f"Invalid line: '{line}'")
 
-                    key, value = line
+                    key, value = parts
 
                     if key.lower() not in self.valid_keys:
                         raise ParseError(

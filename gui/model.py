@@ -26,14 +26,18 @@ class SimulationModel:
     def __init__(
         self,
         graph: Graph,
-        paths: Optional[Dict[int, List[Tuple[Union[Hub, Connection], int]]]] = None,
+        paths: Optional[
+            Dict[int, List[Tuple[Union[Hub, Connection], int]]]
+        ] = None,
         drone_path: Optional[List[Hub]] = None
     ) -> None:
         """Initializes the model and precomputes all turn snapshots.
 
         Args:
             graph (Graph): Graph the simulation was computed on.
-            paths (Optional[Dict[int, List[Tuple[Union[Hub, Connection], int]]]]):
+            paths (Optional[
+                        Dict[int, List[Tuple[Union[Hub, Connection], int]]]
+                    ]):
                 Mapping from drone ID to its full trajectory. Takes
                 precedence over ``drone_path`` when provided.
             drone_path (Optional[List[Hub]]): Legacy single-drone
@@ -48,24 +52,22 @@ class SimulationModel:
         self.hubs: Dict[str, Hub] = {hub.name: hub for hub in graph.hubs}
         self.connections: List[Connection] = graph.connections
 
-        # Normalize trajectories to the unified multi-drone format
         self.paths: Dict[int, List[Tuple[Union[Hub, Connection], int]]] = {}
         if paths:
             self.paths = paths
         elif drone_path:
-            # Converts legacy single-agent list of Hubs to temporal trajectories
-            self.paths = {0: [(hub, turn) for turn, hub in enumerate(drone_path)]}
+            self.paths = {
+                0: [(hub, turn) for turn, hub in enumerate(drone_path)]
+            }
         else:
             self.paths = {}
 
-        # Determine maximum simulation turn
         self.max_turn = 0
         if self.paths:
             self.max_turn = max(
                 turn for path in self.paths.values() for (_, turn) in path
             )
 
-        # Precompute snapshots for all turns to ensure immutability and speed
         self._snapshots: Dict[int, TurnSnapshot] = {}
         for turn in range(self.max_turn + 1):
             self._snapshots[turn] = self._create_snapshot(turn)
@@ -84,15 +86,19 @@ class SimulationModel:
         if turn < 0:
             return self._snapshots.get(0) or self._create_snapshot(0)
         if turn > self.max_turn:
-            return self._snapshots.get(self.max_turn) or self._create_snapshot(self.max_turn)
+            return (
+                self._snapshots.get(self.max_turn)
+                or self._create_snapshot(self.max_turn)
+            )
         return self._snapshots[turn]
 
-    def _get_drone_location_at_turn(
+    def _get_location_at_turn(
         self,
         path: List[Tuple[Union[Hub, Connection], int]],
         turn: int
     ) -> Union[Hub, Connection]:
-        """Inspects drone trajectory to find its active location in a given turn.
+        """Inspects drone trajectory to find
+        its active location in a given turn.
 
         Args:
             path (List[Tuple[Union[Hub, Connection], int]]): Full
@@ -154,7 +160,7 @@ class SimulationModel:
                 return True
         return False
 
-    def _get_connection_endpoints_for_drone(
+    def _get_connection_for_drone(
         self,
         drone_id: int,
         conn: Connection,
@@ -177,17 +183,17 @@ class SimulationModel:
         path = self.paths.get(drone_id, [])
         for idx, (loc, t) in enumerate(path):
             if loc == conn and t == turn:
-                # Find preceding hub (source)
-                source = None
+                source: Optional[Hub] = None
                 for j in range(idx - 1, -1, -1):
-                    if isinstance(path[j][0], Hub):
-                        source = path[j][0]
+                    loc_j = path[j][0]
+                    if isinstance(loc_j, Hub):
+                        source = loc_j
                         break
-                # Find succeeding hub (target)
-                target = None
+                target: Optional[Hub] = None
                 for j in range(idx + 1, len(path)):
-                    if isinstance(path[j][0], Hub):
-                        target = path[j][0]
+                    loc_j = path[j][0]
+                    if isinstance(loc_j, Hub):
+                        target = loc_j
                         break
                 if source and target:
                     return source, target
@@ -210,13 +216,17 @@ class SimulationModel:
         """
         drone_locations: Dict[int, Union[Hub, Connection]] = {}
         for drone_id, path in self.paths.items():
-            drone_locations[drone_id] = self._get_drone_location_at_turn(path, turn)
+            drone_locations[drone_id] = self._get_location_at_turn(path, turn)
 
-        prev_drone_locations: Optional[Dict[int, Union[Hub, Connection]]] = None
+        prev_drone_locations: Optional[
+            Dict[int, Union[Hub, Connection]]
+        ] = None
         if turn > 0:
             prev_drone_locations = {}
             for drone_id, path in self.paths.items():
-                prev_drone_locations[drone_id] = self._get_drone_location_at_turn(path, turn - 1)
+                prev_drone_locations[drone_id] = self._get_location_at_turn(
+                    path, turn - 1
+                )
 
         drone_waiting: Dict[int, bool] = {}
         for drone_id in self.paths:
@@ -237,10 +247,10 @@ class SimulationModel:
             elif isinstance(loc, Connection):
                 connection_drones[loc].append(drone_id)
 
-        drone_connection_endpoints: Dict[int, Tuple[Hub, Hub]] = {}
+        drone_connection: Dict[int, Tuple[Hub, Hub]] = {}
         for drone_id, loc in drone_locations.items():
             if isinstance(loc, Connection):
-                drone_connection_endpoints[drone_id] = self._get_connection_endpoints_for_drone(
+                drone_connection[drone_id] = self._get_connection_for_drone(
                     drone_id, loc, turn
                 )
 
@@ -250,5 +260,5 @@ class SimulationModel:
             drone_waiting=drone_waiting,
             connection_drones=connection_drones,
             hub_drones=hub_drones,
-            drone_connection_endpoints=drone_connection_endpoints
+            drone_connection=drone_connection
         )

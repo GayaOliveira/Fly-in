@@ -35,6 +35,3 @@ if __name__ == "__main__":
 
     except ParseError as error:
         print(f"\033[31mError: {error}\033[m")
-
-    except ParseError as error:
-        print(f"\033[31mError: {error}\033[m")

@@ -1,4 +1,4 @@
-import customtkinter as ctk
+import customtkinter as ctk  # type: ignore
 from entity import Graph, Hub
 from .state import SimulationState
 from .snapshot import TurnSnapshot
@@ -6,7 +6,8 @@ from .constants import VisualConstants
 
 
 class GraphRenderer:
-    """Responsible solely for drawing the graph, vertices, edges, and drones on the canvas.
+    """Responsible solely for drawing the graph,
+    vertices, edges, and drones on the canvas.
 
     Attributes:
         graph (Graph): Graph to render.
@@ -28,7 +29,12 @@ class GraphRenderer:
         self.graph: Graph = graph
         self.compact_graph: bool = compact_graph
 
-    def render(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+    def render(
+            self,
+            canvas: ctk.CTkCanvas,
+            state: SimulationState,
+            snapshot: TurnSnapshot
+    ) -> None:
         """Deletes all canvas items and redraws the updated simulation frame.
 
         Args:
@@ -46,7 +52,12 @@ class GraphRenderer:
         self._draw_vertices(canvas, state, snapshot)
         self._draw_drones(canvas, state, snapshot)
 
-    def _draw_edges(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+    def _draw_edges(
+            self,
+            canvas: ctk.CTkCanvas,
+            state: SimulationState,
+            snapshot: TurnSnapshot
+    ) -> None:
         """Draws every connection as a line, with styling based on its state.
 
         Colors and widens edges according to saturation, hover, and
@@ -67,11 +78,12 @@ class GraphRenderer:
         for conn in self.graph.connections:
             u, v = conn.hub_pair[0].name, conn.hub_pair[1].name
 
-            # Computes active drone count and check saturation
             current_drones = len(snapshot.connection_drones.get(conn, []))
-            is_saturated = (current_drones > 0 and current_drones >= conn.capacity)
+            is_saturated = (
+                current_drones > 0
+                and current_drones >= conn.capacity
+            )
 
-            # Check hover and selection states
             is_hovered = (state.hover_connection == conn)
             endpoints_selected = (
                 state.selected_hub is not None and
@@ -82,15 +94,14 @@ class GraphRenderer:
                 state.hover_vertex.name in (u, v)
             )
 
-            # Determine visual styling
             if is_saturated:
-                color = VisualConstants.COLOR_SATURATION        # Red color alerting saturation
+                color = VisualConstants.COLOR_SATURATION
                 width = VisualConstants.EDGE_WIDTH + 3
             elif is_hovered:
-                color = VisualConstants.COLOR_HOVER      # Orange on hover
+                color = VisualConstants.COLOR_HOVER
                 width = VisualConstants.EDGE_WIDTH + 2
             elif endpoints_selected:
-                color = VisualConstants.COLOR_SELECTED   # Green on selection
+                color = VisualConstants.COLOR_SELECTED
                 width = VisualConstants.EDGE_WIDTH + 2
             elif endpoints_hovered:
                 color = VisualConstants.COLOR_EDGE
@@ -99,8 +110,9 @@ class GraphRenderer:
                 color = VisualConstants.COLOR_EDGE
                 width = VisualConstants.EDGE_WIDTH
 
-            # Obtain shortened edge line endpoints
-            x1_s, y1_s, x2_s, y2_s = mapper.get_shortened_line(u, v, VisualConstants.RADIUS)
+            x1_s, y1_s, x2_s, y2_s = mapper.get_shortened_line(
+                u, v, VisualConstants.RADIUS
+            )
 
             canvas.create_line(
                 x1_s, y1_s,
@@ -110,8 +122,12 @@ class GraphRenderer:
                 smooth=True,
             )
 
-            # Capacity indicator (hidden if graph is compact unless hovered or selected)
-            show_capacity = (not self.compact_graph) or is_hovered or endpoints_selected or endpoints_hovered
+            show_capacity = (
+                not self.compact_graph
+                or is_hovered
+                or endpoints_selected
+                or endpoints_hovered
+            )
             if show_capacity:
                 x1, y1 = mapper.get_coord(u)
                 x2, y2 = mapper.get_coord(v)
@@ -120,16 +136,34 @@ class GraphRenderer:
                     mx - 15, my - 8, mx + 15, my + 8,
                     fill=VisualConstants.COLOR_BG, outline="", width=0
                 )
-                text_color = VisualConstants.COLOR_SATURATION if is_saturated else (VisualConstants.COLOR_WARNING if current_drones > 0 else VisualConstants.COLOR_CAPACITY_DEFAULT)
+                text_color = (
+                    VisualConstants.COLOR_SATURATION
+                    if is_saturated
+                    else (
+                        VisualConstants.COLOR_WARNING
+                        if current_drones > 0
+                        else VisualConstants.COLOR_CAPACITY_DEFAULT
+                    )
+                )
                 canvas.create_text(
                     mx, my,
                     text=f"{current_drones}/{conn.capacity}",
                     fill=text_color,
-                    font=("Helvetica", 8, "bold" if current_drones > 0 else "normal"),
+                    font=(
+                        "Helvetica",
+                        8,
+                        "bold" if current_drones > 0 else "normal"
+                    ),
                 )
 
-    def _draw_vertices(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
-        """Draws every hub as a circular marker, with styling based on its state.
+    def _draw_vertices(
+            self,
+            canvas: ctk.CTkCanvas,
+            state: SimulationState,
+            snapshot: TurnSnapshot
+    ) -> None:
+        """Draws every hub as a circular
+        marker, with styling based on its state.
 
         Colors, borders, and sizes each hub marker according to
         saturation, hover, and selection state, and optionally draws a
@@ -150,14 +184,21 @@ class GraphRenderer:
             name = hub.name
             cx, cy = mapper.get_coord(name)
 
-            # Compute hub occupation and saturation
             current_drones_at_hub = len(snapshot.hub_drones.get(hub, []))
-            is_saturated = (current_drones_at_hub > 0 and current_drones_at_hub >= hub.capacity)
+            is_saturated = (
+                current_drones_at_hub > 0
+                and current_drones_at_hub >= hub.capacity
+            )
 
-            is_selected = (state.selected_hub is not None and state.selected_hub.name == name)
-            is_hovered = (state.hover_vertex is not None and state.hover_vertex.name == name)
+            is_selected = (
+                state.selected_hub is not None
+                and state.selected_hub.name == name
+            )
+            is_hovered = (
+                state.hover_vertex is not None
+                and state.hover_vertex.name == name
+            )
 
-            # Determine vertex radius, borders, and fills
             if is_selected:
                 fill = VisualConstants.COLOR_SELECTED
                 border = VisualConstants.COLOR_BORDER
@@ -170,9 +211,17 @@ class GraphRenderer:
                 border_w = VisualConstants.BORDER_WIDTH
             else:
                 fill = self._color_vertex(hub)
-                border = VisualConstants.COLOR_SATURATION if is_saturated else self._color_border(hub)
+                border = (
+                    VisualConstants.COLOR_SATURATION
+                    if is_saturated
+                    else self._color_border(hub)
+                )
                 radius = VisualConstants.RADIUS
-                border_w = VisualConstants.BORDER_WIDTH + 2 if is_saturated else VisualConstants.BORDER_WIDTH
+                border_w = (
+                    VisualConstants.BORDER_WIDTH + 2
+                    if is_saturated
+                    else VisualConstants.BORDER_WIDTH
+                )
 
             canvas.create_oval(
                 cx - radius, cy - radius, cx + radius, cy + radius,
@@ -185,18 +234,37 @@ class GraphRenderer:
                 font=("Helvetica", 11, "bold"),
             )
 
-            # Capacity text rendering (with responsiveness toggle)
-            show_capacity = (not self.compact_graph) or is_selected or is_hovered
+            show_capacity = (
+                not self.compact_graph
+                or is_selected or is_hovered
+            )
             if show_capacity:
-                text_color = VisualConstants.COLOR_SATURATION if is_saturated else (VisualConstants.COLOR_WARNING if current_drones_at_hub > 0 else VisualConstants.COLOR_CAPACITY_DEFAULT)
+                text_color = (
+                    VisualConstants.COLOR_SATURATION
+                    if is_saturated
+                    else (
+                        VisualConstants.COLOR_WARNING
+                        if current_drones_at_hub > 0
+                        else VisualConstants.COLOR_CAPACITY_DEFAULT
+                    )
+                )
                 canvas.create_text(
                     cx, cy + radius + 11,
                     text=f"{current_drones_at_hub}/{hub.capacity}",
                     fill=text_color,
-                    font=("Helvetica", 8, "bold" if current_drones_at_hub > 0 else "normal"),
+                    font=(
+                        "Helvetica",
+                        8,
+                        "bold" if current_drones_at_hub > 0 else "normal"
+                    ),
                 )
 
-    def _draw_drones(self, canvas: ctk.CTkCanvas, state: SimulationState, snapshot: TurnSnapshot) -> None:
+    def _draw_drones(
+        self,
+        canvas: ctk.CTkCanvas,
+        state: SimulationState,
+        snapshot: TurnSnapshot
+    ) -> None:
         """Draws every drone at its current hub or in-transit position.
 
         Args:
@@ -211,7 +279,6 @@ class GraphRenderer:
         """
         mapper = state.coordinate_mapper
 
-        # Render drones placed at hubs
         for hub, drone_ids in snapshot.hub_drones.items():
             k = len(drone_ids)
             for i, drone_id in enumerate(drone_ids):
@@ -219,18 +286,21 @@ class GraphRenderer:
                 is_waiting = snapshot.drone_waiting.get(drone_id, False)
                 self._draw_drone_badge(canvas, drone_id, dx, dy, is_waiting)
 
-        # Render drones placed on connections
         for conn, drone_ids in snapshot.connection_drones.items():
             k = len(drone_ids)
             for i, drone_id in enumerate(drone_ids):
-                endpoints = snapshot.drone_connection_endpoints.get(drone_id)
+                endpoints = snapshot.drone_connection.get(drone_id)
                 if endpoints:
                     source, target = endpoints
                 else:
                     source, target = conn.hub_pair[0], conn.hub_pair[1]
 
-                dx, dy = mapper.get_drone_connection_position(source.name, target.name, i, k)
-                self._draw_drone_badge(canvas, drone_id, dx, dy, is_waiting=True)
+                dx, dy = mapper.get_drone_connection_position(
+                    source.name, target.name, i, k
+                )
+                self._draw_drone_badge(
+                    canvas, drone_id, dx, dy, is_waiting=True
+                )
 
     def _draw_drone_badge(
         self,
@@ -240,23 +310,22 @@ class GraphRenderer:
         y: float,
         is_waiting: bool
     ) -> None:
-        """Draws the representation of a single drone badge with its ID and optional waiting halo.
+        """Draws the representation of a single drone
+        badge with its ID and optional waiting halo.
 
         Args:
             canvas (ctk.CTkCanvas): Canvas to draw onto.
-            drone_id (int): ID of the drone, displayed as the badge's
-                label.
+            drone_id (int): ID of the drone, displayed as the badge's label.
             x (float): X coordinate to center the badge at.
             y (float): Y coordinate to center the badge at.
             is_waiting (bool): Whether to draw a dashed halo indicating
-                the drone is waiting/delayed.
+            the drone is waiting/delayed.
 
         Returns:
             None
         """
         drone_r = 10
 
-        # Draw dotted halo if waiting/delayed
         if is_waiting:
             canvas.create_oval(
                 x - (drone_r + 5), y - (drone_r + 5),
@@ -264,14 +333,12 @@ class GraphRenderer:
                 outline=VisualConstants.COLOR_WARNING, width=1.5, dash=(4, 4)
             )
 
-        # Draw core magenta circle
         canvas.create_oval(
             x - drone_r, y - drone_r,
             x + drone_r, y + drone_r,
             fill=VisualConstants.COLOR_DRONE, outline="#ffffff", width=1.5
         )
 
-        # Draw centered ID text
         canvas.create_text(
             x, y,
             text=str(drone_id),

@@ -50,7 +50,7 @@ class Pathfinder(Protocol):
     def find_path(
         self,
         constraints: list[tuple[Hub | Connection, int]],
-    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:
+    ) -> tuple[float, list[tuple[Hub | Connection, int]]]:
         """Finds a path from the graph's start hub to its end hub.
 
         Args:
@@ -60,7 +60,7 @@ class Pathfinder(Protocol):
                 drones.
 
         Returns:
-            tuple[int, list[tuple[Hub | Connection, int]]]: The total
+            tuple[float, list[tuple[Hub | Connection, int]]]: The total
             path cost and the sequence of ``(location, turn)`` steps
             forming the path. If no path exists, implementations
             should return ``(float('inf'), [])``.
@@ -97,14 +97,16 @@ class A_star(Pathfinder):
             None
         """
         self.graph = graph
-        self.neighbors = self._find_neighbors()
+        self.neighbors: dict[
+            Hub, list[tuple[Hub, Connection]]
+        ] = self._find_neighbors()
         self.start = graph.start_hub
         self.end = graph.end_hub
 
     def find_path(
         self,
         constraints: list[tuple[Hub | Connection, int]],
-    ) -> tuple[int, list[tuple[Hub | Connection, int]]]:
+    ) -> tuple[float, list[tuple[Hub | Connection, int]]]:
         """Searches for the lowest-cost path from start to end.
 
         Runs a time-expanded A* search: each queue state is a
@@ -122,7 +124,7 @@ class A_star(Pathfinder):
                 avoid.
 
         Returns:
-            tuple[int, list[tuple[Hub | Connection, int]]]: The total
+            tuple[float, list[tuple[Hub | Connection, int]]]: The total
             path cost and the sequence of ``(location, turn)`` steps
             forming the path from start to end. Returns
             ``(float('inf'), [])`` if no path can be found.
@@ -157,7 +159,7 @@ class A_star(Pathfinder):
             visited.add((current, turn))
 
             if current is self.end:
-                return cost, path
+                return float(cost), path
 
             next_turn = turn + 1
 
@@ -199,16 +201,14 @@ class A_star(Pathfinder):
 
                 heapq.heappush(
                     queue,
-                    (
-                        QueueItem(
-                            cost=new_cost + self._heuristic(neighbor),
-                            priority=0 if neighbor.is_priority() else 1,
-                            order=next(counter),
-                            current=neighbor,
-                            turn=new_turn,
-                            connection=connection,
-                            path=new_path
-                        )
+                    QueueItem(
+                        cost=new_cost + self._heuristic(neighbor),
+                        priority=0 if neighbor.is_priority() else 1,
+                        order=next(counter),
+                        current=neighbor,
+                        turn=new_turn,
+                        connection=connection,
+                        path=new_path
                     )
                 )
 
@@ -220,7 +220,7 @@ class A_star(Pathfinder):
                         queue,
                         QueueItem(
                             cost=cost + 1,
-                            priority=0,
+                            priority=1,
                             order=next(counter),
                             current=current,
                             turn=next_turn,
@@ -239,7 +239,9 @@ class A_star(Pathfinder):
             hub to a list of ``(neighbor_hub, connection)`` pairs
             reachable from it.
         """
-        neighbors = {hub: [] for hub in self.graph.hubs}
+        neighbors: dict[Hub, list[tuple[Hub, Connection]]] = {
+            hub: [] for hub in self.graph.hubs
+        }
 
         for connection in self.graph.connections:
             hub_a, hub_b = connection.hub_pair

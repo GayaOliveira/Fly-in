@@ -1,6 +1,6 @@
 import math
-from typing import Optional, Union, Dict, List, Tuple
-import customtkinter as ctk
+from typing import Optional, Union, Dict, List, Tuple, Any
+import customtkinter as ctk  # type: ignore
 from entity import Graph, Hub, Connection
 
 from .constants import VisualConstants
@@ -13,7 +13,7 @@ from .inspector import GraphInspector
 from .renderer import GraphRenderer
 
 
-class SimulationWindow(ctk.CTk):
+class SimulationWindow(ctk.CTk):  # type: ignore
     """Top-level CustomTkinter window hosting the drone simulation GUI.
 
     Wires together the model (simulation data), state (visual state),
@@ -51,7 +51,9 @@ class SimulationWindow(ctk.CTk):
 
         Args:
             graph (Graph): Graph to visualize.
-            paths (Optional[Dict[int, List[Tuple[Union[Hub, Connection], int]]]]):
+            paths (Optional[
+                        Dict[int, List[Tuple[Union[Hub, Connection], int]]]
+                    ]):
                 Mapping from drone ID to its full trajectory.
             drone_path (Optional[List[Hub]]): Legacy single-drone
                 trajectory expressed as a plain list of hubs.
@@ -209,16 +211,6 @@ class SimulationWindow(ctk.CTk):
         btn_bar = ctk.CTkFrame(control_frame, fg_color="transparent")
         btn_bar.pack(pady=(4, 8))
 
-        self.btn_reset = ctk.CTkButton(
-            btn_bar,
-            text="🔄 Resetar",
-            width=100,
-            fg_color="#2d2d44",
-            hover_color="#3d3d5c",
-            command=self._on_reset
-        )
-        self.btn_reset.pack(side="left", padx=5)
-
         self.btn_back = ctk.CTkButton(
             btn_bar,
             text="◀ Voltar",
@@ -361,21 +353,7 @@ class SimulationWindow(ctk.CTk):
         self.controller.step_backward()
         self.render()
 
-    def _on_reset(self) -> None:
-        """Handles the "reset" button being clicked.
-
-        Pauses playback if running, resets the simulation state, and
-        re-renders.
-
-        Returns:
-            None
-        """
-        if self.state.is_playing:
-            self._on_toggle_play()
-        self.controller.reset()
-        self.render()
-
-    def _on_hover(self, event) -> None:
+    def _on_hover(self, event: Any) -> None:
         """Handles mouse movement over the canvas.
 
         Performs a hit test at the cursor position and, if the
@@ -398,7 +376,7 @@ class SimulationWindow(ctk.CTk):
             self.controller.set_hover(hit.hub, hit.connection)
             self.render()
 
-    def _on_click(self, event) -> None:
+    def _on_click(self, event: Any) -> None:
         """Handles mouse clicks on the canvas.
 
         Performs a hit test at the click position and, if a hub was
@@ -416,7 +394,7 @@ class SimulationWindow(ctk.CTk):
             self.controller.select_hub(hit.hub)
             self.render()
 
-    def _on_leave(self, event) -> None:
+    def _on_leave(self, event: Any) -> None:
         """Handles the mouse cursor leaving the canvas.
 
         Clears any hover state and re-renders.
@@ -504,8 +482,9 @@ class SimulationWindow(ctk.CTk):
             curr_drones = len(snapshot.hub_drones.get(target_hub, []))
 
             details = []
-            if meta.get("zone"):
-                details.append(f"Zona: {meta['zone'].upper()}")
+            zone = meta.get("zone")
+            if zone:
+                details.append(f"Zona: {zone.upper()}")
             details.append(f"Capacidade: {curr_drones}/{target_hub.capacity}")
             if target_hub.start:
                 details.append("Ponto Inicial")

@@ -5,7 +5,7 @@ from enum import Enum
 from matplotlib.colors import is_color_like
 
 
-class HubMetadata(TypedDict):
+class HubMetadata(TypedDict, total=False):
     """Typed mapping describing the optional metadata of a hub.
 
     Attributes:

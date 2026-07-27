@@ -38,7 +38,7 @@ class ConnectionSchema(BaseModel):
         """
 
         if metadata.isnumeric():
-            return metadata
+            return int(metadata)
 
         tokens = metadata.split("=")
 
@@ -51,4 +51,4 @@ class ConnectionSchema(BaseModel):
         if not tokens[1].isnumeric():
             raise ValueError("Invalid metadata value")
 
-        return tokens[1]
+        return int(tokens[1])

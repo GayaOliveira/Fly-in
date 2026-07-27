@@ -90,5 +90,5 @@ class Planner:
                 if (location, turn) in path
             )
 
-            if occurrences >= location.capacity:
+            if occurrences >= int(location.capacity or 0):
                 self.constraints.append((location, turn))

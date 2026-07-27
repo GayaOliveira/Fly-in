@@ -45,7 +45,7 @@ class Graph:
         self.connections = connections
 
     @classmethod
-    def from_parsed(cls, parsed: Parsed):
+    def from_parsed(cls, parsed: Parsed) -> "Graph":
         """Builds a :class:`Graph` from parsed configuration data.
 
         Constructs all hubs and connections from their validated
@@ -75,7 +75,7 @@ class Graph:
         end_hub = next(hub for hub in hubs if hub.end)
 
         drones = [
-                Drone(start_hub)
+                Drone(start_hub.coordinates)
                 for _ in range(parsed["nb_drones"])
             ]
 

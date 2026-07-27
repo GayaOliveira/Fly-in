@@ -66,7 +66,7 @@ class Parser:
                 references an unknown hub, or if any hub/connection
                 fails schema validation.
         """
-        data: dict[str, int | list[HubSchema] | list[ConnectionSchema]] = {
+        data: Parsed = {
             "nb_drones": 0,
             "hubs": [],
             "connections": []
@@ -86,13 +86,13 @@ class Parser:
                     )
 
                 try:
-                    hub = HubSchema(
-                        start=True if key == "start_hub" else False,
-                        end=True if key == "end_hub" else False,
-                        name=hub_data["name"],
-                        coordinates=hub_data["coordinates"],
-                        metadata=hub_data["metadata"]
-                    )
+                    hub = HubSchema.model_validate({
+                        "start": True if key == "start_hub" else False,
+                        "end": True if key == "end_hub" else False,
+                        "name": hub_data["name"],
+                        "coordinates": hub_data["coordinates"],
+                        "metadata": hub_data["metadata"]
+                    })
 
                     if self.is_overlapping_hub(
                         hub, data["hubs"]
@@ -131,10 +131,10 @@ class Parser:
                     connection_data.update({"metadata": "1"})
 
                 try:
-                    connection = ConnectionSchema(
-                        hub_pair=hub_pair,
-                        max_link_capacity=connection_data["metadata"]
-                    )
+                    connection = ConnectionSchema.model_validate({
+                        "hub_pair": hub_pair,
+                        "max_link_capacity": connection_data["metadata"]
+                    })
 
                     data["connections"].append(connection)
 
@@ -276,7 +276,7 @@ class Parser:
 
         return parsed
 
-    def _get_metadata(self, raw: str, line: str) -> str:
+    def _get_metadata(self, raw: str, line: str) -> tuple[str, int]:
         """Extracts the bracketed metadata substring from a raw line.
 
         Args:

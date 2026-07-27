@@ -19,7 +19,7 @@ if __name__ == "__main__":
     ]
 
     for file in maps:
-        process_result: subprocess.CompletedProcess = subprocess.run(
+        process_result: subprocess.CompletedProcess[bytes] = subprocess.run(
             [
                 sys.executable,
                 "main.py",

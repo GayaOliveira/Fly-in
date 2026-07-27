@@ -11,6 +11,9 @@ class Connection:
             connection simultaneously.
     """
 
+    hub_pair: list[Hub]
+    capacity: int
+
     def __init__(
         self,
         hub_pair: list[Hub],
@@ -31,7 +34,11 @@ class Connection:
         self.capacity = max_link_capacity
 
     @classmethod
-    def from_schema(cls, schema: ConnectionSchema, hubs: list[Hub]):
+    def from_schema(
+        cls,
+        schema: ConnectionSchema,
+        hubs: list[Hub]
+    ) -> "Connection":
         """Builds a :class:`Connection` instance from a validated schema.
 
         Args:
@@ -57,7 +64,7 @@ class Connection:
             max_link_capacity=schema.max_link_capacity
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Returns a human-readable ``"hub_a-hub_b"`` representation.
 
         Returns:

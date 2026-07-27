@@ -18,7 +18,7 @@ class TurnSnapshot:
             connection to the IDs of drones currently traversing it.
         hub_drones (Dict[Hub, List[int]]): Mapping from hub to the IDs
             of drones currently located at it.
-        drone_connection_endpoints (Dict[int, Tuple[Hub, Hub]]):
+        drone_connection (Dict[int, Tuple[Hub, Hub]]):
             Mapping from drone ID to the ``(source, target)`` hub pair
             of the connection it is currently on, for drones in
             transit.
@@ -28,4 +28,4 @@ class TurnSnapshot:
     drone_waiting: Dict[int, bool]
     connection_drones: Dict[Connection, List[int]]
     hub_drones: Dict[Hub, List[int]]
-    drone_connection_endpoints: Dict[int, Tuple[Hub, Hub]]
+    drone_connection: Dict[int, Tuple[Hub, Hub]]
