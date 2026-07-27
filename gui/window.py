@@ -1,6 +1,6 @@
 import math
 from typing import Optional, Union, Dict, List, Tuple, Any
-import customtkinter as ctk  # type: ignore
+import customtkinter as ctk
 from entity import Graph, Hub, Connection
 
 from .constants import VisualConstants
@@ -13,7 +13,7 @@ from .inspector import GraphInspector
 from .renderer import GraphRenderer
 
 
-class SimulationWindow(ctk.CTk):  # type: ignore
+class SimulationWindow(ctk.CTk):
     """Top-level CustomTkinter window hosting the drone simulation GUI.
 
     Wires together the model (simulation data), state (visual state),

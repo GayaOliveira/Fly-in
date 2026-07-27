@@ -1,4 +1,4 @@
-import customtkinter as ctk  # type: ignore
+import customtkinter as ctk
 from entity import Graph, Hub
 from .state import SimulationState
 from .snapshot import TurnSnapshot
